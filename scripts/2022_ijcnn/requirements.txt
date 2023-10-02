@@ -1,0 +1,10 @@
+transformers==4.18.0
+pandas==1.0.1
+numpy==1.21.4
+matplotlib==3.5.1
+torch==1.10.0
+tqdm==4.62.2
+datasets==1.16.1
+nltk==3.6.5
+sentencepiece==0.1.99
+protobuf==3.20.0
