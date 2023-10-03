@@ -337,7 +337,8 @@ if __name__ == "__main__":
             result_store = WandbResultStore()
 
             if args.sweep_id is None:
-                sweep_id = wandb.sweep(sweep_config, project="controlled_realignment")
+                project = args.strategies[0] + "_" + args.tasks[0]
+                sweep_id = wandb.sweep(sweep_config, project=project)
             else:
                 sweep_id = args.sweep_id
 
@@ -364,7 +365,7 @@ if __name__ == "__main__":
                 zh_segmenter=zh_segmenter,
             )
 
-            wandb.agent(sweep_id, final_train_fn, project="controlled_realignment")
+            wandb.agent(sweep_id, final_train_fn, project=project)
         else:
             datasets.disable_progress_bar()
             results = []
