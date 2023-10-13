@@ -337,6 +337,7 @@ if __name__ == "__main__":
             result_store = WandbResultStore()
 
             if args.sweep_id is None:
+                # project = args.models[0] + "_" + args.strategies[0] + "_" + args.tasks[0]
                 project = args.strategies[0] + "_" + args.tasks[0]
                 sweep_id = wandb.sweep(sweep_config, project=project)
             else:

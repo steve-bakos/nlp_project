@@ -97,6 +97,46 @@ def realignment_training_loop(
     - realignment_steps_by_finetuning: number of realignment optimization steps to perform by fine-tuning steps (useful in 'during' strategy)
     - label_key: (deprecated) the key for the labels in the training input
     """
+
+    # Define a function to unfreeze the next layer in the list
+    def unfreeze_next_in_list(model):
+        if layers_to_unfreeze:
+            layer_to_unfreeze = layers_to_unfreeze.pop(0)
+            for param in model.roberta.encoder.layer[layer_to_unfreeze].parameters():
+                param.requires_grad = True
+
+    # Define a function to log the status of the Embedding space and each RobertaLayer (frozen or unfrozen)
+    def log_layer_status(model):
+        # Log the status of the entire embedding space
+        if any(param.requires_grad for param in model.roberta.embeddings.parameters()):
+            logging.info("Embedding Space: Unfrozen")
+        else:
+            logging.info("Embedding Space: Frozen")
+            
+        logging.info("Word Embeddings: {}".format(
+            model.roberta.embeddings.word_embeddings.weight.requires_grad)
+        )
+        logging.info("Position Embeddings: {}".format(
+            model.roberta.embeddings.position_embeddings.weight.requires_grad)
+        )
+        logging.info("Token Type Embeddings: {}".format(
+            model.roberta.embeddings.token_type_embeddings.weight.requires_grad)
+        )
+        logging.info("LayerNorm: {}".format(
+            model.roberta.embeddings.LayerNorm.weight.requires_grad)
+        )
+        logging.info("Dropout: {}".format(
+            any(p.requires_grad for p in model.roberta.embeddings.dropout.parameters())
+        ))
+            
+        # Log the status of encoder layers
+        layers = list(model.roberta.encoder.layer)
+        for i, layer in enumerate(layers):
+            if any(param.requires_grad for param in layer.parameters()):
+                logging.info(f"RobertaLayer {i}: Unfrozen")
+            else:
+                logging.info(f"RobertaLayer {i}: Frozen")
+
     data_collator = data_collator or DataCollatorForTokenClassification(tokenizer)
     epoch_callbacks = epoch_callbacks or []
     realignment_step_callbacks = realignment_step_callbacks or []
@@ -226,6 +266,11 @@ def realignment_training_loop(
                 else model.__class__.from_pretrained(cache_path, ignore_mismatched_sizes=True)
             )
         else:
+
+            print('')
+            print('STARTING REALIGNMENT')
+            print()
+
             training_state = epoch_loop(
                 model,
                 before_optimizer,
@@ -261,33 +306,24 @@ def realignment_training_loop(
                 with open(info_path, "w") as f:
                     f.write(hash_args + "\n")
 
-    # Define a function to freeze all layers except the last n
-    def freeze_layers_except_last_n(model, n):
-        layers = list(model.roberta.encoder.layer)
-        for layer in layers[:-n]:
-            for param in layer.parameters():
+            print('')
+            print('DONE REALIGNMENT')
+            print()
+
+            print('Freezing layers...')
+            # After realignment, freeze the embedding layer and encoder of the Roberta model
+            for param in model.roberta.embeddings.parameters():
                 param.requires_grad = False
 
-    # List of layers to be unfrozen, starting from the penultimate layer and moving towards the front
-    layers_to_unfreeze = list(range(len(model.roberta.encoder.layer) - 2, -1, -1))
+            print(model)
 
-    print(f'Layers: {layers_to_unfreeze}')
+            print('Freezing done...')
+            log_layer_status(model)
+            
+    # # List of layers to be unfrozen, starting from the penultimate layer and moving towards the front
+    # layers_to_unfreeze = list(range(len(model.roberta.encoder.layer) - 2, -1, -1))
 
-    # Define a function to unfreeze the next layer in the list
-    def unfreeze_next_in_list(model):
-        if layers_to_unfreeze:
-            layer_to_unfreeze = layers_to_unfreeze.pop(0)
-            for param in model.roberta.encoder.layer[layer_to_unfreeze].parameters():
-                param.requires_grad = True
-
-    # Define a function to log the status of each RobertaLayer (frozen or unfrozen)
-    def log_layer_status(model):
-        layers = list(model.roberta.encoder.layer)
-        for i, layer in enumerate(layers):
-            if any(param.requires_grad for param in layer.parameters()):
-                logging.info(f"RobertaLayer {i}: Unfrozen")
-            else:
-                logging.info(f"RobertaLayer {i}: Frozen")
+    # print(f'Layers: {layers_to_unfreeze}')
 
     optimizer = Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
     scheduler = get_scheduler(
@@ -306,6 +342,10 @@ def realignment_training_loop(
         print(model)
         print()
         freeze_layers_except_last_n(model, 1)
+
+    print()
+    print('STARTING FINETUNING')
+    print()
 
     for i in range(n_epochs):
         training_state = epoch_loop(
@@ -368,6 +408,10 @@ def realignment_training_loop(
         if strategy == 'staged':
             unfreeze_next_in_list(model)
             log_layer_status(model)  # Log the layer status after unfreezing
+
+    print()
+    print('DONE FINETUNING')
+    print()
 
     if strategy == "after":
         after_optimizer = Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
