@@ -62,7 +62,12 @@ def train(
     if method == "baseline":
         aligner = None
     else:
-        method, aligner = method.split("_")
+        # method, aligner = method.split("_")
+        aligner = method.split("_")[-1]
+        method = "_".join(x for x in method.split("_")[:-1])
+        
+    print(f'METHOD : {method}')
+    print(f'ALIGNER: {aligner}')
 
     # result_store allows to gather information along the experiment
     # By default, only logs them in the console

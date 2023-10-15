@@ -210,7 +210,7 @@ def realignment_training_loop(
     use_caching = False
 
     # If strategy is "before" or "before+during", perform realignment before fine-tuning
-    if strategy in ["before", "before+during"]:
+    if strategy in ["before", "before+during", "freeze_embedding"]:
         use_caching = cache_dir is not None and hash_args is not None and seed is not None
 
         learning_rate = learning_rate
@@ -310,16 +310,17 @@ def realignment_training_loop(
             print('DONE REALIGNMENT')
             print()
 
-            print('Freezing layers...')
             # After realignment, freeze the embedding layer and encoder of the Roberta model
-            for param in model.roberta.embeddings.parameters():
-                param.requires_grad = False
+            if strategy == 'freeze_embedding':
+                print('Freezing layers...')
+                for param in model.roberta.embeddings.parameters():
+                    param.requires_grad = False
 
-            print(model)
+                print(model)
 
-            print('Freezing done...')
-            log_layer_status(model)
-            
+                print('Freezing done...')
+                log_layer_status(model)
+
     # # List of layers to be unfrozen, starting from the penultimate layer and moving towards the front
     # layers_to_unfreeze = list(range(len(model.roberta.encoder.layer) - 2, -1, -1))
 
