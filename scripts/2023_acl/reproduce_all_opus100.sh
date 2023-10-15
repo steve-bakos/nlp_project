@@ -165,7 +165,7 @@ if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
         --cache_dir $CACHE_DIR \
         --n_epochs 5 \
         --output_file $RESULT_DIR/controlled_realignment_opus100_tagging_large_staged.csv $ADD_ARGS \
-        --debug
+        --use_wandb
 fi 
 
 # if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
