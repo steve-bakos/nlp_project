@@ -88,7 +88,13 @@ class TrainingState:
         if strategy in ["during", "staged"]:
             nb_realignment_steps_expected = nb_finetuning_steps_expected
             nb_realignment_samples_expected = nb_realignment_steps_expected * realignment_batch_size
-        elif strategy in ["before", "after", "freeze_embedding", "freeze_embedding_pre_realignment"]:
+        elif strategy in ["before", "after", 
+                          "freeze_embedding", 
+                          "freeze_embedding_pre_realignment", 
+                          "freeze_2_encoders_pre_realignment",
+                          "freeze_debugging",
+                          "freeze_realign_unfreeze",
+                          "freeze_realign_unfreeze_last_6"]:
             if nb_realignment_steps_before is not None:
                 nb_realignment_steps_expected = nb_realignment_steps_before
                 nb_realignment_samples_expected = (
