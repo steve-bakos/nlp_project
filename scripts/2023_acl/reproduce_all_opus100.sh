@@ -159,13 +159,13 @@ if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
         --fastalign_dir $FASTALIGN_DIR/opus100 \
         --dico_dir $DICOALIGN_DIR/opus100 \
         --awesome_dir $AWESOME_DIR/opus100 \
-        --strategies freeze_realign_unfreeze_3to8_fastalign \
+        --strategies freeze_realign_finetune_1to6_fastalign \
         --models xlm-roberta-base \
         --tasks udpos \
         --cache_dir $CACHE_DIR \
         --n_epochs 5 \
         --output_file $RESULT_DIR/controlled_realignment_opus100_tagging_large_staged.csv $ADD_ARGS \
-        --use_wandb
+        --debug
 fi 
 
 # if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then

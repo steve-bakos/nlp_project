@@ -31,12 +31,28 @@ wuetal_subsets = {
     "zh": "zh_gsd",
 }
 
-get_wuetal_udpos = get_token_classification_getter(
-    lambda lang, cache_dir=None: load_dataset(
+# get_wuetal_udpos = get_token_classification_getter(
+#     lambda lang, cache_dir=None: load_dataset(
+#         "universal_dependencies", wuetal_subsets[lang], cache_dir=cache_dir
+#     ),
+#     "upos",
+# )
+
+def load_with_language_wuetal(lang, cache_dir=None):
+    dataset = load_dataset(
         "universal_dependencies", wuetal_subsets[lang], cache_dir=cache_dir
-    ),
+    )
+    for split in dataset.keys():
+        dataset[split] = dataset[split].add_column("language", [lang] * len(dataset[split]))
+
+    print(dataset)
+    return dataset
+
+get_wuetal_udpos = get_token_classification_getter(
+    load_with_language_wuetal,
     "upos",
 )
+
 
 
 def get_xtreme_udpos_langs():

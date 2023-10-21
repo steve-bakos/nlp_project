@@ -96,7 +96,10 @@ class TrainingState:
                           "freeze_realign_unfreeze",
                           "freeze_realign_unfreeze_last_6",
                           "freeze_realign_unfreeze_first_6pls8nd9",
-                          "freeze_realign_unfreeze_3to8",]:
+                          "freeze_realign_unfreeze_3to8",
+                          "freeze_realign_unfreeze_1to8",
+                          "freeze_realign_unfreeze_1to10",
+                          "freeze_realign_finetune_1to6"]:
             if nb_realignment_steps_before is not None:
                 nb_realignment_steps_expected = nb_realignment_steps_before
                 nb_realignment_samples_expected = (

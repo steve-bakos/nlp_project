@@ -121,6 +121,12 @@ def train(
         datasets_cache_dir=data_cache_dir,
     )
 
+    print()
+    print('Training Dataset')
+    print(get_dataset_fn(task_name, zh_segmenter=zh_segmenter))
+    print(training_dataset[0])
+    print()
+
     # Load test dataset for target languages
     validation_datasets = get_dataset_fn(task_name, zh_segmenter=zh_segmenter)(
         right_langs,
