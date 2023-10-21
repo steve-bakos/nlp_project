@@ -150,6 +150,10 @@ def get_token_classification_getter(
                 map(lambda x: x[0].map(lambda y: {**y, "lang_id": [x[1]]}), zip(datasets, lang_id))
             )
 
+        # Assuming lang is a list of languages corresponding to each dataset
+        for idx, dataset in enumerate(datasets):
+            datasets[idx] = dataset.map(lambda examples: {"language": [lang[idx]] * len(examples["input_ids"])}, batched=True)
+
         if n_datasets == 1 or interleave:
             if return_length:
                 return datasets[0], lengths[0]
