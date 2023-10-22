@@ -121,11 +121,10 @@ def train(
         datasets_cache_dir=data_cache_dir,
     )
 
-    print()
-    print('Training Dataset')
-    print(get_dataset_fn(task_name, zh_segmenter=zh_segmenter))
-    print(training_dataset[0])
-    print()
+    # print()
+    # print('fine-tuning dataset')
+    # print(training_dataset[:5])
+    # print()
 
     # Load test dataset for target languages
     validation_datasets = get_dataset_fn(task_name, zh_segmenter=zh_segmenter)(
@@ -137,6 +136,12 @@ def train(
         interleave=False,
     )
 
+    # print()
+    # print('test dataset for target languages')
+    # for dataset in validation_datasets:
+    #     print(dataset[:5])
+    # print()
+
     # Load test dataset for source language
     source_validation_dataset = get_dataset_fn(task_name, zh_segmenter=zh_segmenter)(
         left_lang,
@@ -146,6 +151,11 @@ def train(
         datasets_cache_dir=data_cache_dir,
     )
 
+    # print()
+    # print('test dataset for source language')
+    # print(source_validation_dataset[:5])
+    # print()
+
     # Load realignment datatset
     lang_pairs = [(left_lang, right_lang) for right_lang in right_langs]
     if aligner == "fastalign":
@@ -154,6 +164,7 @@ def train(
             translation_dir,
             fastalign_dir,
             lang_pairs,
+            # lang_to_id={'en':0, 'ar':1, 'es':2, 'fr':3, 'ru':4, 'zh':5},
             max_length=96,
             seed=seed,
         )

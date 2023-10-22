@@ -175,6 +175,12 @@ def realignment_training_loop(
     # If needed, create dataloader for re-alignment task
     if strategy != "baseline":
         # Note: if this line is modified, hashing args for caching must be checked
+
+        # print()
+        # print('Realignment Dataset')
+        # print(realignment_dataset)
+        # print()
+
         realignment_dataloader = DataLoader(
             realignment_dataset,
             shuffle=False,
@@ -221,7 +227,8 @@ def realignment_training_loop(
                     "freeze_realign_unfreeze_3to8",
                     "freeze_realign_unfreeze_1to8",
                     "freeze_realign_unfreeze_1to10",
-                    "freeze_realign_finetune_1to6"]:
+                    "freeze_realign_finetune_1to6",
+                    "freeze_realign_finetune_1to8"]:
         use_caching = cache_dir is not None and hash_args is not None and seed is not None
 
         learning_rate = learning_rate
@@ -278,20 +285,20 @@ def realignment_training_loop(
             )
         else:
 
-            print()
-            print('Realignment Dataloader')
-            for i, batch in enumerate(realignment_dataloader):
-                print(batch.keys())
-                if i == 1:  # This will print the first batch
-                    break
+            # print()
+            # print('Realignment Dataloader')
+            # for i, batch in enumerate(realignment_dataloader):
+            #     # print(batch.keys())
+            #     if i == 1:  # This will print the first batch
+            #         break
 
-            print()
-            print('Fine-tuning Dataloader')
-            for i, batch in enumerate(task_dataloader):
-                print(batch.keys())
-                if i == 1:  # This will print the first batch
-                    break
-            print()
+            # print()
+            # print('Fine-tuning Dataloader')
+            # for i, batch in enumerate(task_dataloader):
+            #     # print(batch)
+            #     if i == 1:  # This will print the first batch
+            #         break
+            # print()
 
             print('')
             print('STARTING REALIGNMENT')
@@ -380,6 +387,14 @@ def realignment_training_loop(
             if strategy == "freeze_realign_finetune_1to6":
                 print(f'Freezing 1 through 6 encoders...')
                 for i in range(6):
+                    for param in model.roberta.encoder.layer[i].parameters():
+                        param.requires_grad = False
+
+                print('Freezing done...')
+
+            if strategy == "freeze_realign_finetune_1to8":
+                print(f'Freezing 1 through 8 encoders...')
+                for i in range(8):
                     for param in model.roberta.encoder.layer[i].parameters():
                         param.requires_grad = False
 
