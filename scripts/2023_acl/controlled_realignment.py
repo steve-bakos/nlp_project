@@ -59,7 +59,7 @@ def train(
     task_name = config["task"]
     seed = config["seed"]
     method = config["method"]
-    if method == "baseline":
+    if method.find("baseline") != -1:
         aligner = None
     else:
         # method, aligner = method.split("_")

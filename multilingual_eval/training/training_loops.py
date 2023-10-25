@@ -173,10 +173,10 @@ def realignment_training_loop(
     )
 
     # If needed, create dataloader for re-alignment task
-    if strategy != "baseline":
+    if strategy.find('baseline') == -1:
         # Note: if this line is modified, hashing args for caching must be checked
 
-        # print()
+        print("Hafiz: Not Using Baseline")
         # print('Realignment Dataset')
         # print(realignment_dataset)
         # print()
@@ -191,6 +191,7 @@ def realignment_training_loop(
             ),
         )
     else:
+        print("Hafiz:Using Baseline")
         realignment_dataloader = None
 
     training_state = TrainingState.compute_expected_samples(
@@ -553,7 +554,7 @@ def realignment_training_loop(
     print('STARTING FINETUNING')
     print()
 
-    if strategy == "during_freeze_realign_unfreeze":
+    if strategy in ["during_freeze_realign_unfreeze", "baseline_freeze_realign_unfreeze"]:
         print('Freezing first 6 encoders...')
         for i in range(6):
             for param in model.roberta.encoder.layer[i].parameters():
