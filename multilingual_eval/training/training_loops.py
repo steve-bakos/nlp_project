@@ -228,7 +228,9 @@ def realignment_training_loop(
                     "freeze_realign_unfreeze_1to8",
                     "freeze_realign_unfreeze_1to10",
                     "freeze_realign_finetune_1to6",
-                    "freeze_realign_finetune_1to8"]:
+                    "freeze_realign_finetune_1to8"
+                    "freeze_realign_finetune_0to2_9to11"
+                   ]:
         use_caching = cache_dir is not None and hash_args is not None and seed is not None
 
         learning_rate = learning_rate
@@ -399,8 +401,13 @@ def realignment_training_loop(
                         param.requires_grad = False
 
                 print('Freezing done...')
+            if strategy == "freeze_realign_finetune_0to2_9to11":
+                print("freeze 0 to 2 and 9 to 11...")
+                for i in [0,1,2,9,10,11]:
+                    for param in model.roberta.encoder.layer[i].parameters():
+                        param.requires_grad = False
 
-
+    
             print(model)
             log_layer_status(model)
 
@@ -508,8 +515,15 @@ def realignment_training_loop(
                         param.requires_grad = True
 
                 print('Unfreezing done...')
+            
+            if strategy == "freeze_realign_finetune_0to2_9to11":
+                print("Unfreeze 0 to 2 and 9 to 11...")
+                for i in [0,1,2,9,10,11]:
+                    for param in model.roberta.encoder.layer[i].parameters():
+                        param.requires_grad = True
 
             log_layer_status(model)
+    
 
 
     # # List of layers to be unfrozen, starting from the penultimate layer and moving towards the front
