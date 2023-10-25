@@ -539,6 +539,16 @@ def realignment_training_loop(
     print('STARTING FINETUNING')
     print()
 
+    if strategy == "during_freeze_realign_unfreeze":
+        print('Freezing first 6 encoders...')
+        for i in range(6):
+            for param in model.roberta.encoder.layer[i].parameters():
+                param.requires_grad = False
+
+        print('Freezing done...')
+
+    log_layer_status(model)
+
     for i in range(n_epochs):
         training_state = epoch_loop(
             model,
@@ -546,7 +556,10 @@ def realignment_training_loop(
             scheduler=scheduler,
             task_dataloader=task_dataloader,
             realignment_dataloader=realignment_dataloader
-            if strategy in ["during", "before+during", "staged"]
+            if strategy in ["during",
+                            "during_freeze_realign_unfreeze",
+                            "before+during", 
+                            "staged"]
             else None,
             task_accumulation_steps=accumulation_steps,
             logging_steps=logging_steps,
@@ -595,11 +608,6 @@ def realignment_training_loop(
                 wandb.log(res)
             if result_store:
                 result_store.log(res)
-
-        # If strategy is staged, unfreeze the next layer after each epoch
-        if strategy == 'staged':
-            unfreeze_next_in_list(model)
-            log_layer_status(model)  # Log the layer status after unfreezing
 
     print()
     print('DONE FINETUNING')
