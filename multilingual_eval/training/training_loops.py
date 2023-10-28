@@ -218,19 +218,8 @@ def realignment_training_loop(
 
     # If strategy is "before" or "before+during", perform realignment before fine-tuning
     if strategy in ["before", "before+during", 
-                    "freeze_embedding", 
-                    "freeze_embedding_pre_realignment",
-                    "freeze_2_encoders_pre_realignment",
                     "freeze_realign_unfreeze",
                     "freeze_realign_unfreeze_last_6",
-                    "freeze_debugging",
-                    "freeze_realign_unfreeze_first_6pls8nd9",
-                    "freeze_realign_unfreeze_3to8",
-                    "freeze_realign_unfreeze_1to8",
-                    "freeze_realign_unfreeze_1to10",
-                    "freeze_realign_finetune_1to6",
-                    "freeze_realign_finetune_1to8"
-                    "freeze_realign_finetune_0to2_9to11"
                    ]:
         use_caching = cache_dir is not None and hash_args is not None and seed is not None
 
@@ -307,43 +296,9 @@ def realignment_training_loop(
             print('STARTING REALIGNMENT')
             print()
 
-            if strategy == "freeze_embedding_pre_realignment":
-                print('Freezing embedding space...')
-                for param in model.roberta.embeddings.parameters():
-                    param.requires_grad = False
-
-                print('Freezing done...')
-            if strategy == "freeze_realign_unfreeze_first_6pls8nd9":
-                print('Freezing first_6plus8and9...')
-                
-                for i in [0,1,2,3,4,5,8,9]:
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
-
-                print('Freezing done...')
-
-            if strategy == "freeze_2_encoders_pre_realignment":
-                # Freeze the first two transformer layers
-                print('Freezing first 2 encoders...')
-                for i in range(2):
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
-
-                print('Freezing done...')
-
-            if strategy == "freeze_debugging":
-                n_layers = 8
-                print(f'Freezing first {n_layers} encoders...')
-                for i in range(n_layers):
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
-
-                print('Freezing done...')
-
             if strategy == "freeze_realign_unfreeze":
-                freeze_realign_unfreeze_layers = 6
-                print(f'Freezing first {freeze_realign_unfreeze_layers} encoders...')
-                for i in range(freeze_realign_unfreeze_layers):
+                print('Freezing first 6 encoders...')
+                for i in range(6):
                     for param in model.roberta.encoder.layer[i].parameters():
                         param.requires_grad = False
 
@@ -359,54 +314,6 @@ def realignment_training_loop(
                         param.requires_grad = False
 
                 print('Freezing done...')
-            
-            if strategy == "freeze_realign_unfreeze_3to8":
-                print('Freezing 3to8...')
-                
-                for i in [3,4,5,6,7,8]:
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
-
-                print('Freezing done...')
-
-            if strategy == "freeze_realign_unfreeze_1to8":
-                print('Freezing freeze_realign_unfreeze_1to8...')
-                
-                for i in range(9):
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
-
-                print('Freezing done...')
-
-            if strategy == "freeze_realign_unfreeze_1to10":
-                print('Freezing freeze_realign_unfreeze_1to10...')
-                
-                for i in range(10):
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
-
-                print('Freezing done...')
-
-            if strategy == "freeze_realign_finetune_1to6":
-                print(f'Freezing 1 through 6 encoders...')
-                for i in range(6):
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
-
-                print('Freezing done...')
-
-            if strategy == "freeze_realign_finetune_1to8":
-                print(f'Freezing 1 through 8 encoders...')
-                for i in range(8):
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
-
-                print('Freezing done...')
-            if strategy == "freeze_realign_finetune_0to2_9to11":
-                print("freeze 0 to 2 and 9 to 11...")
-                for i in [0,1,2,9,10,11]:
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = False
 
     
             print(model)
@@ -452,21 +359,12 @@ def realignment_training_loop(
             print()
 
             if strategy == "freeze_realign_unfreeze":
-                print(f'Unfreezing first {freeze_realign_unfreeze_layers} encoders...')
+                print('Unfreezing first 6 encoders...')
                 for i in range(freeze_realign_unfreeze_layers):
                     for param in model.roberta.encoder.layer[i].parameters():
                         param.requires_grad = True
 
                 print('Unfreezing done...')
-            
-            if strategy == "freeze_realign_unfreeze_first_6pls8nd9":
-                print('Unfreezing first_6plus8and9...')
-                
-                for i in [0,1,2,3,4,5,8,9]:
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = True
-
-                print('Unfroze done...')
 
             
             if strategy == "freeze_realign_unfreeze_last_6":
@@ -479,49 +377,6 @@ def realignment_training_loop(
                         param.requires_grad = True
 
                 print('Unfreezing done...')
-
-            # After realignment, freeze the embedding layer and encoder of the Roberta model
-            if strategy == 'freeze_embedding':
-                print('Freezing layers...')
-                for param in model.roberta.embeddings.parameters():
-                    param.requires_grad = False
-
-                print(model)
-
-                print('Freezing done...')
-            
-            if strategy == "freeze_realign_unfreeze_3to8":
-                print('Unfreezing 3to8...')
-                
-                for i in [3,4,5,6,7,8]:
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = True
-
-                print('Unfreezing done...')
-
-            if strategy == "freeze_realign_unfreeze_1to8":
-                print('Unfreezing freeze_realign_unfreeze_1to8...')
-                
-                for i in range(9):
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = True
-
-                print('Unfreezing done...')
-
-            if strategy == "freeze_realign_unfreeze_1to10":
-                print('Unfreezing freeze_realign_unfreeze_1to10...')
-                
-                for i in range(10):
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = True
-
-                print('Unfreezing done...')
-            
-            if strategy == "freeze_realign_finetune_0to2_9to11":
-                print("Unfreeze 0 to 2 and 9 to 11...")
-                for i in [0,1,2,9,10,11]:
-                    for param in model.roberta.encoder.layer[i].parameters():
-                        param.requires_grad = True
 
             log_layer_status(model)
     
@@ -562,6 +417,12 @@ def realignment_training_loop(
 
         print('Freezing done...')
 
+    if strategy in ["during_freeze_realign_unfreeze_last_6"]:
+        total_layers = len(model.roberta.encoder.layer)
+        for i in range(total_layers - 6, total_layers):
+            for param in model.roberta.encoder.layer[i].parameters():
+                param.requires_grad = False
+
     log_layer_status(model)
 
     for i in range(n_epochs):
@@ -573,6 +434,7 @@ def realignment_training_loop(
             realignment_dataloader=realignment_dataloader
             if strategy in ["during",
                             "during_freeze_realign_unfreeze",
+                            "during_freeze_realign_unfreeze_last_6",
                             "before+during", 
                             "staged"]
             else None,

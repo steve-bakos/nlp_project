@@ -87,6 +87,7 @@ class TrainingState:
         nb_realignment_samples_expected = 0
         if strategy in ["during", 
                         "during_freeze_realign_unfreeze",
+                        "during_freeze_realign_unfreeze_last_6",
                         "staged"]:
             nb_realignment_steps_expected = nb_finetuning_steps_expected
             nb_realignment_samples_expected = nb_realignment_steps_expected * realignment_batch_size
