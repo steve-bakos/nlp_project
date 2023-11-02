@@ -159,9 +159,9 @@ if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
         --fastalign_dir $FASTALIGN_DIR/opus100 \
         --dico_dir $DICOALIGN_DIR/opus100 \
         --awesome_dir $AWESOME_DIR/opus100 \
-        --strategies baseline_freeze_realign_unfreeze \
-        --models xlm-roberta-base \
-        --tasks wikiann \
+        --strategies freeze_realign_unfreeze_fastalign \
+        --models distilbert-base-multilingual-cased \
+        --tasks udpos \
         --cache_dir $CACHE_DIR \
         --n_epochs 5 \
         --output_file $RESULT_DIR/controlled_realignment_opus100_tagging_large_staged.csv $ADD_ARGS \

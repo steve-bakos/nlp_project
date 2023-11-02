@@ -88,6 +88,7 @@ class TrainingState:
         if strategy in ["during", 
                         "during_freeze_realign_unfreeze",
                         "during_freeze_realign_unfreeze_last_6",
+                        "during_freeze_realign_unfreeze_last_half",
                         "staged"]:
             nb_realignment_steps_expected = nb_finetuning_steps_expected
             nb_realignment_samples_expected = nb_realignment_steps_expected * realignment_batch_size
@@ -103,8 +104,9 @@ class TrainingState:
                           "freeze_realign_unfreeze_1to8",
                           "freeze_realign_unfreeze_1to10",
                           "freeze_realign_finetune_1to6",
-                          "freeze_realign_finetune_1to8"
-                         "freeze_realign_finetune_0to2_9to11"]:
+                          "freeze_realign_finetune_1to8",
+                          "freeze_realign_unfreeze_last_half",
+                          "freeze_realign_finetune_0to2_9to11"]:
             if nb_realignment_steps_before is not None:
                 nb_realignment_steps_expected = nb_realignment_steps_before
                 nb_realignment_samples_expected = (

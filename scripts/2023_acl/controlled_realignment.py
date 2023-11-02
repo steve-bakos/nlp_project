@@ -59,7 +59,7 @@ def train(
     task_name = config["task"]
     seed = config["seed"]
     method = config["method"]
-    if method.find("baseline") != -1:
+    if method == "baseline":
         aligner = None
     else:
         # method, aligner = method.split("_")
@@ -208,6 +208,7 @@ def train(
         result_store=result_store,
         metric_fn=get_dataset_metric_fn(task_name)(),
         data_collator=collator_fn(task_name)(tokenizer),
+        model_name=model_name
     )
 
 
@@ -360,7 +361,10 @@ if __name__ == "__main__":
 
             if args.sweep_id is None:
                 # project = args.models[0] + "_" + args.strategies[0] + "_" + args.tasks[0]
-                project = args.strategies[0] + "_" + args.tasks[0]
+                if "distilbert-base-multilingual-cased" in args.models:
+                    project = "dmb_" + args.strategies[0] + "_" + args.tasks[0]
+                else:
+                    project = args.strategies[0] + "_" + args.tasks[0]
                 sweep_id = wandb.sweep(sweep_config, project=project)
             else:
                 sweep_id = args.sweep_id

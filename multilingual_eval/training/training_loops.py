@@ -55,6 +55,7 @@ def realignment_training_loop(
     pretrained_model_fn=None,
     realignment_steps_by_finetuning=1,
     label_key="labels",
+    model_name=None
 ):
     """
     Performs a training loop, with or without realignment
@@ -98,44 +99,68 @@ def realignment_training_loop(
     - label_key: (deprecated) the key for the labels in the training input
     """
 
-    # Define a function to unfreeze the next layer in the list
-    def unfreeze_next_in_list(model):
-        if layers_to_unfreeze:
-            layer_to_unfreeze = layers_to_unfreeze.pop(0)
-            for param in model.roberta.encoder.layer[layer_to_unfreeze].parameters():
-                param.requires_grad = True
-
     # Define a function to log the status of the Embedding space and each RobertaLayer (frozen or unfrozen)
-    def log_layer_status(model):
-        # Log the status of the entire embedding space
-        if any(param.requires_grad for param in model.roberta.embeddings.parameters()):
-            logging.info("Embedding Space: Unfrozen")
-        else:
-            logging.info("Embedding Space: Frozen")
-            
-        logging.info("Word Embeddings: {}".format(
-            model.roberta.embeddings.word_embeddings.weight.requires_grad)
-        )
-        logging.info("Position Embeddings: {}".format(
-            model.roberta.embeddings.position_embeddings.weight.requires_grad)
-        )
-        logging.info("Token Type Embeddings: {}".format(
-            model.roberta.embeddings.token_type_embeddings.weight.requires_grad)
-        )
-        logging.info("LayerNorm: {}".format(
-            model.roberta.embeddings.LayerNorm.weight.requires_grad)
-        )
-        logging.info("Dropout: {}".format(
-            any(p.requires_grad for p in model.roberta.embeddings.dropout.parameters())
-        ))
-            
-        # Log the status of encoder layers
-        layers = list(model.roberta.encoder.layer)
-        for i, layer in enumerate(layers):
-            if any(param.requires_grad for param in layer.parameters()):
-                logging.info(f"RobertaLayer {i}: Unfrozen")
+    def log_layer_status(model, model_name):
+        if "roberta" in model_name:
+            # Handle RoBERTa and XLM-RoBERTa models
+            if any(param.requires_grad for param in model.roberta.embeddings.parameters()):
+                logging.info("Embedding Space: Unfrozen")
             else:
-                logging.info(f"RobertaLayer {i}: Frozen")
+                logging.info("Embedding Space: Frozen")
+            
+            logging.info("Word Embeddings: {}".format(
+                model.roberta.embeddings.word_embeddings.weight.requires_grad)
+            )
+            logging.info("Position Embeddings: {}".format(
+                model.roberta.embeddings.position_embeddings.weight.requires_grad)
+            )
+            logging.info("Token Type Embeddings: {}".format(
+                model.roberta.embeddings.token_type_embeddings.weight.requires_grad)
+            )
+            logging.info("LayerNorm: {}".format(
+                model.roberta.embeddings.LayerNorm.weight.requires_grad)
+            )
+            logging.info("Dropout: {}".format(
+                any(p.requires_grad for p in model.roberta.embeddings.dropout.parameters())
+            ))
+
+            # Log the status of encoder layers
+            layers = list(model.roberta.encoder.layer)
+            for i, layer in enumerate(layers):
+                if any(param.requires_grad for param in layer.parameters()):
+                    logging.info(f"RobertaLayer {i}: Unfrozen")
+                else:
+                    logging.info(f"RobertaLayer {i}: Frozen")
+
+        elif "distilbert" in model_name:
+            # Handle DistilBERT model
+            if any(param.requires_grad for param in model.distilbert.embeddings.parameters()):
+                logging.info("Embedding Space: Unfrozen")
+            else:
+                logging.info("Embedding Space: Frozen")
+
+            logging.info("Word Embeddings: {}".format(
+                model.distilbert.embeddings.word_embeddings.weight.requires_grad)
+            )
+            logging.info("Position Embeddings: {}".format(
+                model.distilbert.embeddings.position_embeddings.weight.requires_grad)
+            )
+            logging.info("LayerNorm: {}".format(
+                model.distilbert.embeddings.LayerNorm.weight.requires_grad)
+            )
+            logging.info("Dropout: {}".format(
+                model.distilbert.embeddings.dropout.p)
+            )
+
+            # Log the status of transformer layers
+            for i, layer in enumerate(model.distilbert.transformer.layer):
+                if any(param.requires_grad for param in layer.parameters()):
+                    logging.info(f"TransformerBlock {i}: Unfrozen")
+                else:
+                    logging.info(f"TransformerBlock {i}: Frozen")
+
+        else:
+            logging.warning(f"Model type '{model_name}' not recognized. No logging performed.")
 
     data_collator = data_collator or DataCollatorForTokenClassification(tokenizer)
     epoch_callbacks = epoch_callbacks or []
@@ -172,11 +197,16 @@ def realignment_training_loop(
         generator=g,
     )
 
+    print()
+    print(f'RUNNING MODEL: {model_name}')
+    print(model)
+    print()
+
     # If needed, create dataloader for re-alignment task
     if strategy.find('baseline') == -1:
         # Note: if this line is modified, hashing args for caching must be checked
 
-        print("Hafiz: Not Using Baseline")
+        print("Not Using Baseline")
         # print('Realignment Dataset')
         # print(realignment_dataset)
         # print()
@@ -191,7 +221,7 @@ def realignment_training_loop(
             ),
         )
     else:
-        print("Hafiz:Using Baseline")
+        print("Using Baseline")
         realignment_dataloader = None
 
     training_state = TrainingState.compute_expected_samples(
@@ -219,6 +249,7 @@ def realignment_training_loop(
     # If strategy is "before" or "before+during", perform realignment before fine-tuning
     if strategy in ["before", "before+during", 
                     "freeze_realign_unfreeze",
+                    "freeze_realign_unfreeze_last_half",
                     "freeze_realign_unfreeze_last_6",
                    ]:
         use_caching = cache_dir is not None and hash_args is not None and seed is not None
@@ -296,7 +327,7 @@ def realignment_training_loop(
             print('STARTING REALIGNMENT')
             print()
 
-            if strategy == "freeze_realign_unfreeze":
+            if strategy == "freeze_realign_unfreeze" and "roberta" in model_name:
                 print('Freezing first 6 encoders...')
                 for i in range(6):
                     for param in model.roberta.encoder.layer[i].parameters():
@@ -304,7 +335,7 @@ def realignment_training_loop(
 
                 print('Freezing done...')
 
-            if strategy == "freeze_realign_unfreeze_last_6":
+            if strategy == "freeze_realign_unfreeze_last_6" and "roberta" in model_name:
                 freeze_realign_unfreeze_layers = 6
                 print(f'Freezing last {freeze_realign_unfreeze_layers} encoders...')
                 
@@ -315,9 +346,32 @@ def realignment_training_loop(
 
                 print('Freezing done...')
 
-    
-            print(model)
-            log_layer_status(model)
+            if strategy == "freeze_realign_unfreeze" and "distilbert" in model_name:
+                num_layers = len(model.distilbert.transformer.layer)
+                layers_to_freeze = num_layers // 2  # Freezing the first half of the layers
+
+                print(f'Freezing first {layers_to_freeze} transformer blocks...')
+                for i in range(layers_to_freeze):
+                    for param in model.distilbert.transformer.layer[i].parameters():
+                        param.requires_grad = False
+
+                print('Freezing done...')
+
+            if strategy == "freeze_realign_unfreeze_last_half" and "distilbert" in model_name:
+                num_layers = len(model.distilbert.transformer.layer)
+                layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+                # Calculate the starting index for freezing (freezing the last half of the layers)
+                start_freezing_from_layer = num_layers - layers_to_freeze
+
+                print(f'Freezing last {layers_to_freeze} transformer blocks...')
+                for i in range(start_freezing_from_layer, num_layers):
+                    for param in model.distilbert.transformer.layer[i].parameters():
+                        param.requires_grad = False
+
+                print('Freezing done...')
+
+            log_layer_status(model, model_name)
 
             training_state = epoch_loop(
                 model,
@@ -358,7 +412,7 @@ def realignment_training_loop(
             print('DONE REALIGNMENT')
             print()
 
-            if strategy == "freeze_realign_unfreeze":
+            if strategy == "freeze_realign_unfreeze" and "roberta" in model_name:
                 print('Unfreezing first 6 encoders...')
                 for i in range(6):
                     for param in model.roberta.encoder.layer[i].parameters():
@@ -367,7 +421,7 @@ def realignment_training_loop(
                 print('Unfreezing done...')
 
             
-            if strategy == "freeze_realign_unfreeze_last_6":
+            if strategy == "freeze_realign_unfreeze_last_6" and "roberta" in model_name:
                 print('Unfreezing last 6 encoders...')
                 
                 total_layers = len(model.roberta.encoder.layer)
@@ -377,14 +431,30 @@ def realignment_training_loop(
 
                 print('Unfreezing done...')
 
-            log_layer_status(model)
-    
+            if strategy == "freeze_realign_unfreeze" and "distilbert" in model_name:
+                num_layers = len(model.distilbert.transformer.layer)
+                layers_to_freeze = num_layers // 2  # Freezing the first half of the layers
 
+                print(f'Unfreezing first {layers_to_freeze} transformer blocks...')
+                for i in range(layers_to_freeze):
+                    for param in model.distilbert.transformer.layer[i].parameters():
+                        param.requires_grad = True
 
-    # # List of layers to be unfrozen, starting from the penultimate layer and moving towards the front
-    # layers_to_unfreeze = list(range(len(model.roberta.encoder.layer) - 2, -1, -1))
+                print('Unfreezing done...')
 
-    # print(f'Layers: {layers_to_unfreeze}')
+            if strategy == "freeze_realign_unfreeze_last_half" and "distilbert" in model_name:
+                num_layers = len(model.distilbert.transformer.layer)
+                layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+                # Calculate the starting index for freezing (freezing the last half of the layers)
+                start_freezing_from_layer = num_layers - layers_to_freeze
+
+                print(f'Unfreezing last {layers_to_freeze} transformer blocks...')
+                for i in range(start_freezing_from_layer, num_layers):
+                    for param in model.distilbert.transformer.layer[i].parameters():
+                        param.requires_grad = True
+
+                print('Unfreezing done...')
 
     optimizer = Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
     scheduler = get_scheduler(
@@ -397,19 +467,12 @@ def realignment_training_loop(
     for callback in epoch_callbacks:
         callback(model)
 
-    # If strategy is staged, freeze all layers except the last one
-    if strategy == 'staged':
-        print()
-        print(model)
-        print()
-        freeze_layers_except_last_n(model, 1)
-
     print()
     print('STARTING FINETUNING')
     print()
 
     if strategy in ["during_freeze_realign_unfreeze", 
-                    "baseline_freeze_realign_unfreeze"]:
+                    "baseline_freeze_realign_unfreeze"] and "roberta" in model_name:
         print('Freezing first 6 encoders...')
         for i in range(6):
             for param in model.roberta.encoder.layer[i].parameters():
@@ -418,13 +481,38 @@ def realignment_training_loop(
         print('Freezing done...')
 
     if strategy in ["baseline_freeze_realign_unfreeze_last_6",
-                    "during_freeze_realign_unfreeze_last_6"]:
+                    "during_freeze_realign_unfreeze_last_6"] and "roberta" in model_name:
         total_layers = len(model.roberta.encoder.layer)
         for i in range(total_layers - 6, total_layers):
             for param in model.roberta.encoder.layer[i].parameters():
                 param.requires_grad = False
 
-    log_layer_status(model)
+    if strategy == "during_freeze_realign_unfreeze" and "distilbert" in model_name:
+        num_layers = len(model.distilbert.transformer.layer)
+        layers_to_freeze = num_layers // 2  # Freezing the first half of the layers
+
+        print(f'Freezing first {layers_to_freeze} transformer blocks...')
+        for i in range(layers_to_freeze):
+            for param in model.distilbert.transformer.layer[i].parameters():
+                param.requires_grad = False
+
+        print('Freezing done...')
+
+    if strategy == "during_freeze_realign_unfreeze_last_half" and "distilbert" in model_name:
+        num_layers = len(model.distilbert.transformer.layer)
+        layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+        # Calculate the starting index for freezing (freezing the last half of the layers)
+        start_freezing_from_layer = num_layers - layers_to_freeze
+
+        print(f'Freezing last {layers_to_freeze} transformer blocks...')
+        for i in range(start_freezing_from_layer, num_layers):
+            for param in model.distilbert.transformer.layer[i].parameters():
+                param.requires_grad = False
+
+        print('Freezing done...')
+
+    log_layer_status(model, model_name)
 
     for i in range(n_epochs):
         training_state = epoch_loop(
@@ -436,6 +524,7 @@ def realignment_training_loop(
             if strategy in ["during",
                             "during_freeze_realign_unfreeze",
                             "during_freeze_realign_unfreeze_last_6",
+                            "during_freeze_realign_unfreeze_last_half",
                             "before+during", 
                             "staged"]
             else None,
