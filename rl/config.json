@@ -1,0 +1,19 @@
+{
+    "left_lang": "en",
+    "right_langs": ["ar", "es", "fr", "ru", "zh"],
+    "translation_dir": "data/translation/opus100",
+    "fastalign_dir": "data/fastalign/opus100",
+    "dico_dir": "data/dico-align/opus100",
+    "awesome_dir": "data/awesome-align/opus100",
+    "models": "xlm-roberta-base",
+    "strategies": "rl",
+    "aligners": "fastalign",
+    "tasks": "udpos",
+    "cache_dir": "data/cache/datasets",
+    "n_epochs": 5,
+    "output_file": "data/raw_results/controlled_realignment_opus100_tagging_large_staged.csv",
+    "additional_arguments": "ADD_ARGS",
+    "use_wandb": false,
+    "debug": true
+  }
+  

@@ -87,6 +87,7 @@ class TrainingState:
         nb_realignment_samples_expected = 0
         if strategy in ["during", 
                         "during_freeze_realign_unfreeze",
+                        "during_freeze_realign_unfreeze_last_2",
                         "during_freeze_realign_unfreeze_last_6",
                         "during_freeze_realign_unfreeze_last_half",
                         "staged"]:
@@ -98,6 +99,7 @@ class TrainingState:
                           "freeze_2_encoders_pre_realignment",
                           "freeze_debugging",
                           "freeze_realign_unfreeze", #best one so far
+                          "freeze_realign_unfreeze_first_2",
                           "freeze_realign_unfreeze_last_6",
                           "freeze_realign_unfreeze_first_6pls8nd9",
                           "freeze_realign_unfreeze_3to8",

@@ -249,6 +249,7 @@ def realignment_training_loop(
     # If strategy is "before" or "before+during", perform realignment before fine-tuning
     if strategy in ["before", "before+during", 
                     "freeze_realign_unfreeze",
+                    "freeze_realign_unfreeze_first_2",
                     "freeze_realign_unfreeze_last_half",
                     "freeze_realign_unfreeze_last_6",
                    ]:
@@ -357,6 +358,17 @@ def realignment_training_loop(
 
                 print('Freezing done...')
 
+            if strategy == "freeze_realign_unfreeze_first_2" and "distilbert" in model_name:
+                num_layers = len(model.distilbert.transformer.layer)
+                layers_to_freeze = num_layers // 2 - 1  # Freezing the first half of the layers
+
+                print(f'Freezing first {layers_to_freeze} transformer blocks...')
+                for i in range(layers_to_freeze):
+                    for param in model.distilbert.transformer.layer[i].parameters():
+                        param.requires_grad = False
+
+                print('Freezing done...')
+
             if strategy == "freeze_realign_unfreeze_last_half" and "distilbert" in model_name:
                 num_layers = len(model.distilbert.transformer.layer)
                 layers_to_freeze = num_layers // 2  # Number of layers to freeze
@@ -434,6 +446,17 @@ def realignment_training_loop(
             if strategy == "freeze_realign_unfreeze" and "distilbert" in model_name:
                 num_layers = len(model.distilbert.transformer.layer)
                 layers_to_freeze = num_layers // 2  # Freezing the first half of the layers
+
+                print(f'Unfreezing first {layers_to_freeze} transformer blocks...')
+                for i in range(layers_to_freeze):
+                    for param in model.distilbert.transformer.layer[i].parameters():
+                        param.requires_grad = True
+
+                print('Unfreezing done...')
+
+            if strategy == "freeze_realign_unfreeze_first_2" and "distilbert" in model_name:
+                num_layers = len(model.distilbert.transformer.layer)
+                layers_to_freeze = num_layers // 2 - 1  # Freezing the first half of the layers
 
                 print(f'Unfreezing first {layers_to_freeze} transformer blocks...')
                 for i in range(layers_to_freeze):

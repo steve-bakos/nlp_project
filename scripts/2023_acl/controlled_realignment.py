@@ -53,19 +53,23 @@ def train(
     n_epochs=5,
     layers=None,
     result_store=None,
+    aligner=None
 ):
+
+    print('Inside train...')
+
     layers = layers or [-1]
     model_name = config["model"]
     task_name = config["task"]
     seed = config["seed"]
     method = config["method"]
-    if method == "baseline":
-        aligner = None
-    else:
-        # method, aligner = method.split("_")
-        aligner = method.split("_")[-1]
-        method = "_".join(x for x in method.split("_")[:-1])
-        
+    # if method == "baseline":
+    #     aligner = None
+    # else:
+    #     # method, aligner = method.split("_")
+    #     aligner = method.split("_")[-1]
+    #     method = "_".join(x for x in method.split("_")[:-1])
+
     print(f'METHOD : {method}')
     print(f'ALIGNER: {aligner}')
 
@@ -212,180 +216,58 @@ def train(
     )
 
 
-if __name__ == "__main__":
-    import argparse
-
+def rl_main(config):
     logging.basicConfig(level=logging.INFO)
 
-    default_strategies = [
-        "baseline",
-        *[
-            f"{strategy}_{aligner}"
-            for strategy in ["during", "before", "staged"]
-            for aligner in ["fastalign", "dico", "awesome"]
-        ],
-    ]
+    # Ensure necessary directories are created
+    if not config.get('use_wandb') and config.get('output_file'):
+        os.makedirs(os.path.dirname(config['output_file']), exist_ok=True)
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--translation_dir",
-        type=str,
-        default=None,
-        help="Directory where the parallel dataset can be found, must be set if other strategy than baseline is used.",
-    )
-    parser.add_argument(
-        "--fastalign_dir",
-        type=str,
-        default=None,
-        help="Directory where fastalign alignments can be found, must be set if strategy ending in _fastalign is used",
-    )
-    parser.add_argument(
-        "--dico_dir",
-        type=str,
-        help="Directory where bilingual dictionary alignments can be found, must be set if strategy ending in _dico is used",
-    )
-    parser.add_argument(
-        "--awesome_dir",
-        type=str,
-        help="Directory where awesome alignments can be found, must be set if strategy ending in awesome is used",
-    )
-    parser.add_argument(
-        "--models",
-        nargs="+",
-        type=str,
-        default=[
-            "bert-base-multilingual-cased",
-            "xlm-roberta-base",
-            "distilbert-base-multilingual-cased",
-        ],
-    )
-    parser.add_argument(
-        "--tasks", nargs="+", type=str, default=["wikiann", "udpos", "xnli"]
-    )
-    parser.add_argument(
-        "--strategies",
-        nargs="+",
-        type=str,
-        default=default_strategies,
-        help="Realignment strategies to use, of the form strategy_aligner, with strategy being either before or after and aligner being either dico, fastalign or awesome",
-    )
-    parser.add_argument(
-        "--left_lang",
-        type=str,
-        default="en",
-        help="Source language for cross-lingual transfer",
-    )
-    parser.add_argument(
-        "--right_langs",
-        type=str,
-        nargs="+",
-        default=["ar", "es", "fr", "ru", "zh"],
-        help="Target languages for cross-lingual transfer",
-    )
-    parser.add_argument(
-        "--cache_dir",
-        type=str,
-        default=None,
-        help="Cache directory which will contain subdirectories 'transformers' and 'datasets' for caching HuggingFace models and datasets",
-    )
-    parser.add_argument(
-        "--sweep_id",
-        type=str,
-        default=None,
-        help="If using wandb, useful to restart a sweep or launch several run in parallel for a same sweep",
-    )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        dest="debug",
-        help="Use this to perform a quicker test run with less samples",
-    )
-    parser.add_argument(
-        "--large_gpu",
-        action="store_true",
-        dest="large_gpu",
-        help="Use this option for 45GB GPUs (less gradient accumulation needed)",
-    )
-    parser.add_argument("--n_epochs", type=int, default=5)
-    parser.add_argument("--n_seeds", type=int, default=5)
-    parser.add_argument(
-        "--layers",
-        type=int,
-        nargs="+",
-        default=[-1],
-        help="The layer (or list of layers) on which we want to perform realignment (default -1 for the last one)",
-    )
-    parser.add_argument(
-        "--output_file",
-        type=str,
-        default=None,
-        help="The path to the output CSV file containing results (used only if wandb is not use, which is the case by default)",
-    )
-    parser.add_argument(
-        "--use_wandb",
-        action="store_true",
-        dest="use_wandb",
-        help="Use this option to use wandb (but must be installed first)",
-    )
-    parser.set_defaults(debug=False, large_gpu=False, use_wandb=False)
-    args = parser.parse_args()
-
-    if not args.use_wandb and args.output_file is None:
-        raise Exception(
-            f"Either wandb must be used (--use_wandb) or an output csv file must be set (--output_file) to store results"
-        )
-    if not args.use_wandb:
-        os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
-
-    # Config with all the different values of run parameters
+    # Prepare the sweep configuration
     sweep_config = {
         "method": "grid",
         "parameters": {
-            "seed": {"values": seeds[: args.n_seeds]},
-            "model": {"values": args.models},
-            "task": {"values": args.tasks},
-            "method": {"values": args.strategies},
+            "seed": {"values": seeds[:config.get('n_seeds', 5)]},
+            "model": {"values": [config.get('models', [])]},
+            "task": {"values": [config.get('tasks', [])]},
+            "method": {"values": [config.get('strategies', [])]},
         },
     }
 
-    if args.debug:
-        sweep_config["parameters"]["seed"]["values"] = sweep_config["parameters"][
-            "seed"
-        ]["values"][:1]
+    print()
+    print(f'SWEEP CONFIG: {sweep_config}')
+    print()
 
-    with StanfordSegmenter() as zh_segmenter:  # Calls Stanford Segmenter in another process, hence the context manager
-        if args.use_wandb:
+    if config.get('debug'):
+        sweep_config["parameters"]["seed"]["values"] = sweep_config["parameters"]["seed"]["values"][:1]
+
+    with StanfordSegmenter() as zh_segmenter:
+        if config.get('use_wandb'):
             import wandb
-
             result_store = WandbResultStore()
 
-            if args.sweep_id is None:
-                # project = args.models[0] + "_" + args.strategies[0] + "_" + args.tasks[0]
-                if "distilbert-base-multilingual-cased" in args.models:
-                    project = "dmb_" + args.strategies[0] + "_" + args.tasks[0]
-                else:
-                    project = args.strategies[0] + "_" + args.tasks[0]
-                sweep_id = wandb.sweep(sweep_config, project=project)
-            else:
-                sweep_id = args.sweep_id
+            # Determine the project and sweep ID
+            project = config.get('project')
+            sweep_id = config.get('sweep_id') or wandb.sweep(sweep_config, project=project)
 
             final_train_fn = wrap_train(
                 lambda cfg, sweep_cfg, zh_sgm: train(
-                    args.left_lang,
-                    args.right_langs,
-                    args.translation_dir,
-                    args.fastalign_dir,
-                    args.dico_dir,
-                    args.awesome_dir,
-                    layers=args.layers,
+                    config['left_lang'],
+                    config['right_langs'],
+                    config['translation_dir'],
+                    config['fastalign_dir'],
+                    config['dico_dir'],
+                    config['awesome_dir'],
+                    layers=config.get('layers', [-1]),
                     config=cfg,
                     sweep_config=sweep_cfg,
                     zh_segmenter=zh_sgm,
-                    debug=args.debug,
-                    large_gpu=args.large_gpu,
-                    cache_dir=args.cache_dir,
-                    n_epochs=args.n_epochs,
+                    debug=config.get('debug', False),
+                    large_gpu=config.get('large_gpu', False),
+                    cache_dir=config.get('cache_dir'),
+                    n_epochs=config.get('n_epochs', 5),
                     result_store=result_store,
+                    aligner=config['aligners']
                 ),
                 sweep_config,
                 sweep_id,
@@ -396,27 +278,33 @@ if __name__ == "__main__":
         else:
             datasets.disable_progress_bar()
             results = []
-            # Looping over all possible configuration of runs provided in sweep_config
+
+            print('Running without WandB...')
+
             for run_config in imitate_wandb_sweep(sweep_config):
+                print()
+                print(f'RUN CONFIG: {run_config}')
+                print()
                 result_store = DictResultStore()
                 result_store.log(run_config)
                 train(
-                    args.left_lang,
-                    args.right_langs,
-                    args.translation_dir,
-                    args.fastalign_dir,
-                    args.dico_dir,
-                    args.awesome_dir,
-                    layers=args.layers,
+                    config['left_lang'],
+                    config['right_langs'],
+                    config['translation_dir'],
+                    config['fastalign_dir'],
+                    config['dico_dir'],
+                    config['awesome_dir'],
+                    layers=config.get('layers', [-1]),
                     config=run_config,
                     sweep_config=sweep_config,
                     zh_segmenter=zh_segmenter,
-                    debug=args.debug,
-                    large_gpu=args.large_gpu,
-                    cache_dir=args.cache_dir,
-                    n_epochs=args.n_epochs,
+                    debug=config.get('debug', False),
+                    large_gpu=config.get('large_gpu', False),
+                    cache_dir=config.get('cache_dir'),
+                    n_epochs=config.get('n_epochs', 5),
                     result_store=result_store,
+                    aligner=config['aligners'],
                 )
                 results.append(result_store.get_results())
 
-            store_dicts_in_csv(args.output_file, results)
+            store_dicts_in_csv(config['output_file'], results)

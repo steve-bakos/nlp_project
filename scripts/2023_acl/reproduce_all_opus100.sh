@@ -159,7 +159,7 @@ if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
         --fastalign_dir $FASTALIGN_DIR/opus100 \
         --dico_dir $DICOALIGN_DIR/opus100 \
         --awesome_dir $AWESOME_DIR/opus100 \
-        --strategies freeze_realign_unfreeze_fastalign \
+        --strategies during_freeze_realign_unfreeze_last_half_fastalign \
         --models distilbert-base-multilingual-cased \
         --tasks udpos \
         --cache_dir $CACHE_DIR \
@@ -167,6 +167,61 @@ if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
         --output_file $RESULT_DIR/controlled_realignment_opus100_tagging_large_staged.csv $ADD_ARGS \
         --use_wandb
 fi 
+
+if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
+    echo ""
+    echo "Testing controlled_realignment.py staged-realignment..."
+    echo ""
+    python scripts/2023_acl/controlled_realignment.py \
+        --translation_dir $TRANSLATION_DIR/opus100 \
+        --fastalign_dir $FASTALIGN_DIR/opus100 \
+        --dico_dir $DICOALIGN_DIR/opus100 \
+        --awesome_dir $AWESOME_DIR/opus100 \
+        --strategies during_freeze_realign_unfreeze_last_half_awesome \
+        --models distilbert-base-multilingual-cased \
+        --tasks udpos \
+        --cache_dir $CACHE_DIR \
+        --n_epochs 5 \
+        --output_file $RESULT_DIR/controlled_realignment_opus100_tagging_large_staged.csv $ADD_ARGS \
+        --use_wandb
+fi 
+
+if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
+    echo ""
+    echo "Testing controlled_realignment.py staged-realignment..."
+    echo ""
+    python scripts/2023_acl/controlled_realignment.py \
+        --translation_dir $TRANSLATION_DIR/opus100 \
+        --fastalign_dir $FASTALIGN_DIR/opus100 \
+        --dico_dir $DICOALIGN_DIR/opus100 \
+        --awesome_dir $AWESOME_DIR/opus100 \
+        --strategies during_freeze_realign_unfreeze_last_half_dico \
+        --models distilbert-base-multilingual-cased \
+        --tasks udpos \
+        --cache_dir $CACHE_DIR \
+        --n_epochs 5 \
+        --output_file $RESULT_DIR/controlled_realignment_opus100_tagging_large_staged.csv $ADD_ARGS \
+        --use_wandb
+fi 
+
+# if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
+#     echo ""
+#     echo "Testing controlled_realignment.py staged-realignment..."
+#     echo ""
+#     python scripts/2023_acl/controlled_realignment.py \
+#         --translation_dir $TRANSLATION_DIR/opus100 \
+#         --fastalign_dir $FASTALIGN_DIR/opus100 \
+#         --dico_dir $DICOALIGN_DIR/opus100 \
+#         --awesome_dir $AWESOME_DIR/opus100 \
+#         --strategies during_freeze_realign_unfreeze_dico \
+#         --models distilbert-base-multilingual-cased \
+#         --tasks udpos \
+#         --cache_dir $CACHE_DIR \
+#         --n_epochs 5 \
+#         --output_file $RESULT_DIR/controlled_realignment_opus100_tagging_large_staged.csv $ADD_ARGS \
+#         --use_wandb
+# fi 
+
 
 # if [ ! -f $RESULT_DIR/controlled_realignment_opus100_tagging.csv ]; then
 #     echo ""
