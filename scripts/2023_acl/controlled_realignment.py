@@ -59,7 +59,7 @@ def train(
     task_name = config["task"]
     seed = config["seed"]
     method = config["method"]
-    if method == "baseline":
+    if "baseline" in method:
         aligner = None
     else:
         # method, aligner = method.split("_")
@@ -279,7 +279,7 @@ if __name__ == "__main__":
         "--right_langs",
         type=str,
         nargs="+",
-        default=["ar", "es", "fr", "ru", "zh"],
+        default=["ar", "es", "fr", "ru", "zh", "af", "fa", "hi"],
         help="Target languages for cross-lingual transfer",
     )
     parser.add_argument(
@@ -364,7 +364,7 @@ if __name__ == "__main__":
                 if "distilbert-base-multilingual-cased" in args.models:
                     project = "dmb_" + args.strategies[0] + "_" + args.tasks[0]
                 else:
-                    project = args.strategies[0] + "_" + args.tasks[0]
+                    project = "3nl_" + args.strategies[0] + "_" + args.tasks[0]
                 sweep_id = wandb.sweep(sweep_config, project=project)
             else:
                 sweep_id = args.sweep_id
