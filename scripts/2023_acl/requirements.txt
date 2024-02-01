@@ -15,3 +15,4 @@ conllu==4.5.2
 pyarrow==6.0.1
 evaluate==0.4.0
 brokenaxes==0.5.0
+gdown
