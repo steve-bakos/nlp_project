@@ -31,6 +31,7 @@ def epoch_loop(
     scheduler=None,
     task_dataloader=None,
     realignment_dataloader=None,
+    realignment_optimizer=None,
     task_accumulation_steps=1,
     realignment_steps_by_finetuning=1,
     logging_steps=100,
@@ -87,13 +88,17 @@ def epoch_loop(
 
     progress_bar = tqdm(total=nb_batch, file=open(os.devnull, "w"))
 
+    optimizer.zero_grad()
+    if realignment_optimizer:
+        realignment_optimizer.zero_grad()
+
     for i, batch in (
         enumerate(task_dataloader)
         if task_dataloader is not None
         else enumerate(itertools.repeat(None, nb_iter))
     ):
         if i % task_accumulation_steps == 0:
-            optimizer.zero_grad()
+            
             accumulated_steps = 0
             total_loss = 0
             task_loss = 0
@@ -156,18 +161,36 @@ def epoch_loop(
 
             task_loss /= max(1, accumulated_steps)
 
-            # Note that the coefficient is already in the model definition
-            total_loss = task_loss + realignment_loss
+            
+            if realignment_optimizer:
+                if task_dataloader:
+                    task_loss.backward()
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    if scheduler is not None:
+                        scheduler.step()
+                
+                realignment_loss.backward()
+                realignment_optimizer.step()
+                realignment_optimizer.zero_grad()
 
-            total_loss.backward()
+                # Need to zero-out again because realignment_optimizer
+                # does not zero-out gradients it does not update
+                optimizer.zero_grad()
+            else:
+                # Note that the coefficient is already in the model definition
+                total_loss = task_loss + realignment_loss
 
-            optimizer.step()
-            if scheduler is not None:
-                scheduler.step()
+                total_loss.backward()
 
-            if realignment_dataloader is not None:
-                for callback in realignment_step_callbacks:
-                    callback(model)
+                optimizer.step()
+                optimizer.zero_grad()
+                if scheduler is not None:
+                    scheduler.step()
+
+                if realignment_dataloader is not None:
+                    for callback in realignment_step_callbacks:
+                        callback(model)
 
             progress_bar.update()
 

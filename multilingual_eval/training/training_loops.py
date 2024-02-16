@@ -511,6 +511,33 @@ def realignment_training_loop(
                 param.requires_grad = False
 
         print('Freezing done...')
+    
+    realignment_optimizer = None
+    if strategy.startswith("during_partial_freeze"):
+        realigned_parameters = []
+
+        if "roberta" in model_name:
+            n_layers = len(model.roberta.encoder.layer)
+            encoder_prefix = "model.roberta.encoder.layer"
+        elif "distilbert" in model_name:
+            n_layers = len(model.distilbert.transformer.layer)
+            encoder_prefix = "model.distilbert.transformer.layer"
+        else:
+            raise NotImplementedError(f"during_partial_freeze_* strategies are not implemented for model {model}")
+        
+        if strategy.endswith("front"):
+            prefixes_to_ignore = [f"{encoder_prefix}.{i}" for i in range(n_layers // 2)]
+        elif strategy.endswith("back"):
+            prefixes_to_ignore = [f"{encoder_prefix}.{i}" for i in range(n_layers // 2, n_layers)]
+        else:
+            raise NotImplementedError(f"Unrecognized strategy {strategy}")
+        
+        for name, param in model.named_parameters():
+            if any(map(lambda x: name.startswith(x), prefixes_to_ignore)):
+                continue
+
+        realignment_optimizer =  Adam(realigned_parameters, lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
+
 
     log_layer_status(model, model_name)
 
