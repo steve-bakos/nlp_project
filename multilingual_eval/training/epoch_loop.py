@@ -143,6 +143,13 @@ def epoch_loop(
                         realignment_coef / realignment_steps_by_finetuning
                     ) * outputs.loss
 
+                if realignment_optimizer:
+                    realignment_loss.backward()
+                    realignment_optimizer.step()
+                    realignment_optimizer.zero_grad()
+
+                    optimizer.zero_grad()
+
         if batch is not None:
 
             if parallelism and torch.cuda.device_count() > 1:
@@ -163,34 +170,21 @@ def epoch_loop(
 
             
             if realignment_optimizer:
-                if task_dataloader:
-                    task_loss.backward()
-                    optimizer.step()
-                    optimizer.zero_grad()
-                    if scheduler is not None:
-                        scheduler.step()
-                
-                realignment_loss.backward()
-                realignment_optimizer.step()
-                realignment_optimizer.zero_grad()
-
-                # Need to zero-out again because realignment_optimizer
-                # does not zero-out gradients it does not update
-                optimizer.zero_grad()
+                total_loss = task_loss
             else:
                 # Note that the coefficient is already in the model definition
                 total_loss = task_loss + realignment_loss
 
-                total_loss.backward()
+            total_loss.backward()
 
-                optimizer.step()
-                optimizer.zero_grad()
-                if scheduler is not None:
-                    scheduler.step()
+            optimizer.step()
+            optimizer.zero_grad()
+            if scheduler is not None:
+                scheduler.step()
 
-                if realignment_dataloader is not None:
-                    for callback in realignment_step_callbacks:
-                        callback(model)
+            if realignment_dataloader is not None:
+                for callback in realignment_step_callbacks:
+                    callback(model)
 
             progress_bar.update()
 

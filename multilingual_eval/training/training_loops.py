@@ -535,6 +535,7 @@ def realignment_training_loop(
         for name, param in model.named_parameters():
             if any(map(lambda x: name.startswith(x), prefixes_to_ignore)):
                 continue
+            realigned_parameters.append(param)
 
         realignment_optimizer =  Adam(realigned_parameters, lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
 
@@ -553,8 +554,11 @@ def realignment_training_loop(
                             "during_freeze_realign_unfreeze_last_6",
                             "during_freeze_realign_unfreeze_last_half",
                             "before+during", 
+                            "during_partial_freeze_front",
+                            "during_partial_freeze_back",
                             "staged"]
             else None,
+            realignment_optimizer=realignment_optimizer,
             task_accumulation_steps=accumulation_steps,
             logging_steps=logging_steps,
             log_in_wandb=log_in_wandb,
