@@ -460,8 +460,8 @@ def realignment_training_loop(
     scheduler = get_scheduler(
         "linear",
         optimizer,
-        num_warmup_steps=int(0.1 * len(task_dataloader) * 5),
-        num_training_steps=len(task_dataloader) * 5,
+        num_warmup_steps=int(0.1 * len(task_dataloader) * n_epochs),
+        num_training_steps=len(task_dataloader) * n_epochs,
     )
 
     for callback in epoch_callbacks:
@@ -513,6 +513,7 @@ def realignment_training_loop(
         print('Freezing done...')
     
     realignment_optimizer = None
+    realignment_scheduler = None
     if strategy.startswith("during_partial_freeze"):
         realigned_parameters = []
 
@@ -538,6 +539,12 @@ def realignment_training_loop(
             realigned_parameters.append(param)
 
         realignment_optimizer =  Adam(realigned_parameters, lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
+        realignment_scheduler = get_scheduler(
+            "linear",
+            realignment_optimizer,
+            num_warmup_steps=int(0.1 * len(task_dataloader) * n_epochs),
+            num_training_steps=len(task_dataloader) * n_epochs,
+        )
 
 
     log_layer_status(model, model_name)
@@ -559,6 +566,7 @@ def realignment_training_loop(
                             "staged"]
             else None,
             realignment_optimizer=realignment_optimizer,
+            realignment_scheduler=realignment_scheduler,
             task_accumulation_steps=accumulation_steps,
             logging_steps=logging_steps,
             log_in_wandb=log_in_wandb,

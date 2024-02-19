@@ -32,6 +32,7 @@ def epoch_loop(
     task_dataloader=None,
     realignment_dataloader=None,
     realignment_optimizer=None,
+    realignment_scheduler=None,
     task_accumulation_steps=1,
     realignment_steps_by_finetuning=1,
     logging_steps=100,
@@ -147,6 +148,9 @@ def epoch_loop(
                     realignment_loss.backward()
                     realignment_optimizer.step()
                     realignment_optimizer.zero_grad()
+
+                    if realignment_scheduler:
+                        realignment_scheduler.step()
 
                     optimizer.zero_grad()
 
