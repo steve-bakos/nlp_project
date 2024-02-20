@@ -31,6 +31,8 @@ def epoch_loop(
     scheduler=None,
     task_dataloader=None,
     realignment_dataloader=None,
+    realignment_optimizer=None,
+    realignment_scheduler=None,
     task_accumulation_steps=1,
     realignment_steps_by_finetuning=1,
     logging_steps=100,
@@ -87,13 +89,17 @@ def epoch_loop(
 
     progress_bar = tqdm(total=nb_batch, file=open(os.devnull, "w"))
 
+    optimizer.zero_grad()
+    if realignment_optimizer:
+        realignment_optimizer.zero_grad()
+
     for i, batch in (
         enumerate(task_dataloader)
         if task_dataloader is not None
         else enumerate(itertools.repeat(None, nb_iter))
     ):
         if i % task_accumulation_steps == 0:
-            optimizer.zero_grad()
+            
             accumulated_steps = 0
             total_loss = 0
             task_loss = 0
@@ -138,6 +144,16 @@ def epoch_loop(
                         realignment_coef / realignment_steps_by_finetuning
                     ) * outputs.loss
 
+                if realignment_optimizer:
+                    realignment_loss.backward()
+                    realignment_optimizer.step()
+                    realignment_optimizer.zero_grad()
+
+                    if realignment_scheduler:
+                        realignment_scheduler.step()
+
+                    optimizer.zero_grad()
+
         if batch is not None:
 
             if parallelism and torch.cuda.device_count() > 1:
@@ -156,12 +172,17 @@ def epoch_loop(
 
             task_loss /= max(1, accumulated_steps)
 
-            # Note that the coefficient is already in the model definition
-            total_loss = task_loss + realignment_loss
+            
+            if realignment_optimizer:
+                total_loss = task_loss
+            else:
+                # Note that the coefficient is already in the model definition
+                total_loss = task_loss + realignment_loss
 
             total_loss.backward()
 
             optimizer.step()
+            optimizer.zero_grad()
             if scheduler is not None:
                 scheduler.step()
 
