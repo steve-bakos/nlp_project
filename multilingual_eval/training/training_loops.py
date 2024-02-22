@@ -530,6 +530,8 @@ def realignment_training_loop(
             prefixes_to_ignore = [f"{encoder_prefix}.{i}" for i in range(n_layers // 2)]
         elif strategy.endswith("back"):
             prefixes_to_ignore = [f"{encoder_prefix}.{i}" for i in range(n_layers // 2, n_layers)]
+        elif strategy.endswith("none"):
+            prefixes_to_ignore = []
         else:
             raise NotImplementedError(f"Unrecognized strategy {strategy}")
         
@@ -563,6 +565,7 @@ def realignment_training_loop(
                             "before+during", 
                             "during_partial_freeze_front",
                             "during_partial_freeze_back",
+                            "during_partial_freeze_none",
                             "staged"]
             else None,
             realignment_optimizer=realignment_optimizer,
