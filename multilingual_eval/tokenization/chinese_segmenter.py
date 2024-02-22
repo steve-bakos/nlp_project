@@ -17,10 +17,11 @@ def filtered_stderr_logger(p):
 
 
 class StanfordSegmenter:
-    def __init__(self):
+    def __init__(self, port=9001):
         self.segmenter = None
         self.server_process = None
         self.entered = False
+        self.port = port
 
     def __enter__(self):
         self.entered = True
@@ -65,10 +66,10 @@ class StanfordSegmenter:
                     f"tools/stanford-corenlp-full-2016-10-31 does not exist, please install the Stanford Segmenter (download_resources/stanford_tokenizer.sh)"
                 )
             self.server_process = Popen(
-                ["/bin/bash", "subscripts/launch_corenlp_server.sh"], stderr=DEVNULL, stdout=DEVNULL
+                ["/bin/bash", "subscripts/launch_corenlp_server.sh", str(self.port)], stderr=DEVNULL, stdout=DEVNULL
             )
 
-            self.segmenter = CoreNLPParser("http://localhost:9001", encoding="utf8")
+            self.segmenter = CoreNLPParser(f"http://localhost:{self.port}", encoding="utf8")
             sleep(2)
             self.start_and_wait_for_availability()
 

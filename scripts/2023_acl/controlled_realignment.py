@@ -327,6 +327,11 @@ if __name__ == "__main__":
         dest="use_wandb",
         help="Use this option to use wandb (but must be installed first)",
     )
+    parser.add_argument(
+        "--segmenter_port",
+        type=int,
+        default=9001
+    )
     parser.set_defaults(debug=False, large_gpu=False, use_wandb=False)
     args = parser.parse_args()
 
@@ -353,7 +358,7 @@ if __name__ == "__main__":
             "seed"
         ]["values"][:1]
 
-    with StanfordSegmenter() as zh_segmenter:  # Calls Stanford Segmenter in another process, hence the context manager
+    with StanfordSegmenter(port=args.segmenter_port) as zh_segmenter:  # Calls Stanford Segmenter in another process, hence the context manager
         if args.use_wandb:
             import wandb
 
