@@ -23,6 +23,7 @@ from multilingual_eval.training.wandb_utils import (
     wrap_train,
     imitate_wandb_sweep,
     store_dicts_in_csv,
+    CSVRecorder,
 )
 from multilingual_eval.training.training_loops import realignment_training_loop
 from multilingual_eval.training.batch_sizes import get_batch_size
@@ -119,6 +120,7 @@ def train(
         split="train",
         limit=1000 if debug else None,
         datasets_cache_dir=data_cache_dir,
+        max_length=96
     )
 
     # print()
@@ -358,7 +360,7 @@ if __name__ == "__main__":
             "seed"
         ]["values"][:1]
 
-    with StanfordSegmenter(port=args.segmenter_port) as zh_segmenter:  # Calls Stanford Segmenter in another process, hence the context manager
+    with StanfordSegmenter(port=args.segmenter_port) as zh_segmenter, CSVRecorder(args.output_file, config_props=list(sweep_config["parameters"].keys())) as recorder:  # Calls Stanford Segmenter in another process, hence the context manager
         if args.use_wandb:
             import wandb
 
@@ -405,6 +407,9 @@ if __name__ == "__main__":
             for run_config in imitate_wandb_sweep(sweep_config):
                 result_store = DictResultStore()
                 result_store.log(run_config)
+                if recorder.is_already_passed(run_config):
+                    logging.info("This config was already run. Will ignore it")
+                    continue
                 train(
                     args.left_lang,
                     args.right_langs,
@@ -422,6 +427,4 @@ if __name__ == "__main__":
                     n_epochs=args.n_epochs,
                     result_store=result_store,
                 )
-                results.append(result_store.get_results())
-
-            store_dicts_in_csv(args.output_file, results)
+                recorder.add(result_store.get_results())
