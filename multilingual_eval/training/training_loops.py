@@ -519,10 +519,10 @@ def realignment_training_loop(
 
         if "roberta" in model_name:
             n_layers = len(model.roberta.encoder.layer)
-            encoder_prefix = "model.roberta.encoder.layer"
+            encoder_prefix = "roberta.encoder.layer"
         elif "distilbert" in model_name:
             n_layers = len(model.distilbert.transformer.layer)
-            encoder_prefix = "model.distilbert.transformer.layer"
+            encoder_prefix = "distilbert.transformer.layer"
         else:
             raise NotImplementedError(f"during_partial_freeze_* strategies are not implemented for model {model}")
         
