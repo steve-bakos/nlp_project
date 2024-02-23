@@ -559,6 +559,7 @@ def realignment_training_loop(
             task_dataloader=task_dataloader,
             realignment_dataloader=realignment_dataloader
             if strategy in ["during",
+                            "during_separate_backward",
                             "during_freeze_realign_unfreeze",
                             "during_freeze_realign_unfreeze_last_6",
                             "during_freeze_realign_unfreeze_last_half",
@@ -581,6 +582,7 @@ def realignment_training_loop(
             training_state=training_state,
             log_first_sample=i == 0,
             realignment_steps_by_finetuning=realignment_steps_by_finetuning,
+            separate_backward=strategy == "during_separate_backward"
         )
         for callback in epoch_callbacks:
             callback(model)
