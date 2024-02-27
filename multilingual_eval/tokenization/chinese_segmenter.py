@@ -66,7 +66,7 @@ class StanfordSegmenter:
                     f"tools/stanford-corenlp-full-2016-10-31 does not exist, please install the Stanford Segmenter (download_resources/stanford_tokenizer.sh)"
                 )
             self.server_process = Popen(
-                ["/bin/bash", "subscripts/launch_corenlp_server.sh", str(self.port)], stderr=DEVNULL, stdout=DEVNULL
+                ["/bin/bash", "subscripts/launch_corenlp_server.sh", str(self.port)], stderr=sys.stderr, stdout=DEVNULL
             )
 
             self.segmenter = CoreNLPParser(f"http://localhost:{self.port}", encoding="utf8")
