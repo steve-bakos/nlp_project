@@ -514,15 +514,16 @@ def realignment_training_loop(
     
     realignment_optimizer = None
     realignment_scheduler = None
+    realignment_ignore_parameters = []
     if strategy.startswith("during_partial_freeze"):
-        realigned_parameters = []
+
 
         if "roberta" in model_name:
             n_layers = len(model.roberta.encoder.layer)
-            encoder_prefix = "model.roberta.encoder.layer"
+            encoder_prefix = "roberta.encoder.layer"
         elif "distilbert" in model_name:
             n_layers = len(model.distilbert.transformer.layer)
-            encoder_prefix = "model.distilbert.transformer.layer"
+            encoder_prefix = "distilbert.transformer.layer"
         else:
             raise NotImplementedError(f"during_partial_freeze_* strategies are not implemented for model {model}")
         
@@ -530,22 +531,14 @@ def realignment_training_loop(
             prefixes_to_ignore = [f"{encoder_prefix}.{i}" for i in range(n_layers // 2)]
         elif strategy.endswith("back"):
             prefixes_to_ignore = [f"{encoder_prefix}.{i}" for i in range(n_layers // 2, n_layers)]
+        elif strategy.endswith("none"):
+            prefixes_to_ignore = []
         else:
             raise NotImplementedError(f"Unrecognized strategy {strategy}")
         
         for name, param in model.named_parameters():
             if any(map(lambda x: name.startswith(x), prefixes_to_ignore)):
-                continue
-            realigned_parameters.append(param)
-
-        realignment_optimizer =  Adam(realigned_parameters, lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
-        realignment_scheduler = get_scheduler(
-            "linear",
-            realignment_optimizer,
-            num_warmup_steps=int(0.1 * len(task_dataloader) * n_epochs),
-            num_training_steps=len(task_dataloader) * n_epochs,
-        )
-
+                realignment_ignore_parameters.append(name)
 
     log_layer_status(model, model_name)
 
@@ -557,12 +550,14 @@ def realignment_training_loop(
             task_dataloader=task_dataloader,
             realignment_dataloader=realignment_dataloader
             if strategy in ["during",
+                            "during_separate_backward",
                             "during_freeze_realign_unfreeze",
                             "during_freeze_realign_unfreeze_last_6",
                             "during_freeze_realign_unfreeze_last_half",
                             "before+during", 
                             "during_partial_freeze_front",
                             "during_partial_freeze_back",
+                            "during_partial_freeze_none",
                             "staged"]
             else None,
             realignment_optimizer=realignment_optimizer,
@@ -578,6 +573,8 @@ def realignment_training_loop(
             training_state=training_state,
             log_first_sample=i == 0,
             realignment_steps_by_finetuning=realignment_steps_by_finetuning,
+            separate_backward=strategy == "during_separate_backward" or bool(realignment_ignore_parameters),
+            realignment_ignore_parameters=realignment_ignore_parameters
         )
         for callback in epoch_callbacks:
             callback(model)

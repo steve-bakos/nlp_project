@@ -44,6 +44,8 @@ def epoch_loop(
     training_state: Optional[TrainingState] = None,
     log_first_sample=False,
     parallelism=False,
+    separate_backward=False,
+    realignment_ignore_parameters: Optional[list] = None,
 ):
     """
     Function to perform an epoch of training, with specific task samples and/or realignment task samples
@@ -73,6 +75,11 @@ def epoch_loop(
     if nb_iter is not None and task_dataloader is not None:
         logging.warning(
             f"nb_iter was provided ({nb_iter}) but so was task_dataloader. nb_iter will be ignored."
+        )
+    if not separate_backward and bool(realignment_ignore_parameters):
+        raise Exception(
+            f"If realignment_ignore_parameters ({bool(realignment_ignore_parameters is not None)}) is set "
+            + "then separate_backward must be set to True (was set to False)"
         )
 
     if task_dataloader is not None:
@@ -144,8 +151,10 @@ def epoch_loop(
                         realignment_coef / realignment_steps_by_finetuning
                     ) * outputs.loss
 
-                if realignment_optimizer:
+                if separate_backward or realignment_optimizer:
                     realignment_loss.backward()
+
+                if realignment_optimizer:
                     realignment_optimizer.step()
                     realignment_optimizer.zero_grad()
 
@@ -153,6 +162,13 @@ def epoch_loop(
                         realignment_scheduler.step()
 
                     optimizer.zero_grad()
+                
+                if realignment_ignore_parameters:
+                    for name, param in model.named_parameters():
+                        if name in realignment_ignore_parameters:
+                            param.grad = None
+                
+                total_loss += realignment_loss
 
         if batch is not None:
 
@@ -171,15 +187,12 @@ def epoch_loop(
                 training_state.nb_finetuning_steps_seen += 1
 
             task_loss /= max(1, accumulated_steps)
+            total_loss += task_loss
 
-            
-            if realignment_optimizer:
-                total_loss = task_loss
+            if accumulated_steps > 0 and (separate_backward or realignment_optimizer):
+                task_loss.backward()
             else:
-                # Note that the coefficient is already in the model definition
-                total_loss = task_loss + realignment_loss
-
-            total_loss.backward()
+                total_loss.backward()
 
             optimizer.step()
             optimizer.zero_grad()
