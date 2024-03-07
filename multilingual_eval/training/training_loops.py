@@ -9,6 +9,7 @@ import random
 import math
 import hashlib
 import os
+import re
 import json
 import dataclasses
 
@@ -251,7 +252,7 @@ def realignment_training_loop(
                     "freeze_realign_unfreeze",
                     "freeze_realign_unfreeze_last_half",
                     "freeze_realign_unfreeze_last_6",
-                   ]:
+                   ] or re.match(r"freeze_realign_unfreeze_[0-9]+_[0-9]+", strategy):
         use_caching = cache_dir is not None and hash_args is not None and seed is not None
 
         learning_rate = learning_rate
@@ -371,6 +372,31 @@ def realignment_training_loop(
 
                 print('Freezing done...')
 
+            if re.match(r"freeze_realign_unfreeze_[0-9]+_[0-9]+", strategy):
+                *_, first_layer, last_layer = strategy.split("_")
+                first_layer = int(first_layer)
+                last_layer = int(last_layer)
+                if first_layer == 0:
+                    if "roberta" in model_name:
+                        embeddings = model.roberta.embeddings
+                    elif "distilbert" in model_name:
+                        embeddings = model.distilbert.embeddings
+                    else:
+                        raise NotImplementedError(f"Strategy of type /freeze_realign_unfreeze_[0-9]+_[0-9]+/ is not implemented for model {model_name}")
+                    for param in embeddings.parameters():
+                        param.requires_grad = False
+                    first_layer = 1
+                for i in range(first_layer - 1, last_layer - 1):
+                    if "roberta" in model_name:
+                        layers = model.roberta.encoder.layer
+                    elif "distilbert" in model_name:
+                        layers = model.distilbert.transformer.layer
+                    else:
+                        raise NotImplementedError(f"Strategy of type /freeze_realign_unfreeze_[0-9]+_[0-9]+/ is not implemented for model {model_name}")
+                    for param in layers[i].parameters():
+                        param.requires_grad = False
+
+
             log_layer_status(model, model_name)
 
             training_state = epoch_loop(
@@ -455,6 +481,30 @@ def realignment_training_loop(
                         param.requires_grad = True
 
                 print('Unfreezing done...')
+            
+            if re.match(r"freeze_realign_unfreeze_[0-9]+_[0-9]+", strategy):
+                *_, first_layer, last_layer = strategy.split("_")
+                first_layer = int(first_layer)
+                last_layer = int(last_layer)
+                if first_layer == 0:
+                    if "roberta" in model_name:
+                        embeddings = model.roberta.embeddings
+                    elif "distilbert" in model_name:
+                        embeddings = model.distilbert.embeddings
+                    else:
+                        raise NotImplementedError(f"Strategy of type /freeze_realign_unfreeze_[0-9]+_[0-9]+/ is not implemented for model {model_name}")
+                    for param in embeddings.parameters():
+                        param.requires_grad = True
+                    first_layer = 1
+                for i in range(first_layer - 1, last_layer - 1):
+                    if "roberta" in model_name:
+                        layers = model.roberta.encoder.layer
+                    elif "distilbert" in model_name:
+                        layers = model.distilbert.transformer.layer
+                    else:
+                        raise NotImplementedError(f"Strategy of type /freeze_realign_unfreeze_[0-9]+_[0-9]+/ is not implemented for model {model_name}")
+                    for param in layers[i].parameters():
+                        param.requires_grad = True
 
     optimizer = Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
     scheduler = get_scheduler(
@@ -521,9 +571,11 @@ def realignment_training_loop(
         if "roberta" in model_name:
             n_layers = len(model.roberta.encoder.layer)
             encoder_prefix = "roberta.encoder.layer"
+            embedding_prefix = "roberta.embeddings"
         elif "distilbert" in model_name:
             n_layers = len(model.distilbert.transformer.layer)
             encoder_prefix = "distilbert.transformer.layer"
+            embedding_prefix = "distilbert.embeddings"
         else:
             raise NotImplementedError(f"during_partial_freeze_* strategies are not implemented for model {model}")
         
@@ -533,12 +585,25 @@ def realignment_training_loop(
             prefixes_to_ignore = [f"{encoder_prefix}.{i}" for i in range(n_layers // 2, n_layers)]
         elif strategy.endswith("none"):
             prefixes_to_ignore = []
+        elif re.match(r"during_partial_freeze_[0-9]+_[0-9]+", strategy):
+            *_, first_layer, last_layer = strategy.split("_")
+            first_layer = int(first_layer)
+            last_layer = int(last_layer)
+            prefixes_to_ignore = []
+            if first_layer == 0:
+                prefixes_to_ignore.append(embedding_prefix)
+                first_layer = 1
+            for i in range(first_layer - 1, last_layer - 1):
+                prefixes_to_ignore.append(f"{encoder_prefix}.{i}")
         else:
             raise NotImplementedError(f"Unrecognized strategy {strategy}")
         
         for name, param in model.named_parameters():
             if any(map(lambda x: name.startswith(x), prefixes_to_ignore)):
                 realignment_ignore_parameters.append(name)
+        
+        if not strategy.endswith("none"):
+            assert len(realignment_ignore_parameters) > 0
 
     log_layer_status(model, model_name)
 
@@ -549,16 +614,7 @@ def realignment_training_loop(
             scheduler=scheduler,
             task_dataloader=task_dataloader,
             realignment_dataloader=realignment_dataloader
-            if strategy in ["during",
-                            "during_separate_backward",
-                            "during_freeze_realign_unfreeze",
-                            "during_freeze_realign_unfreeze_last_6",
-                            "during_freeze_realign_unfreeze_last_half",
-                            "before+during", 
-                            "during_partial_freeze_front",
-                            "during_partial_freeze_back",
-                            "during_partial_freeze_none",
-                            "staged"]
+            if "during" in strategy or strategy == "staged"
             else None,
             realignment_optimizer=realignment_optimizer,
             realignment_scheduler=realignment_scheduler,
