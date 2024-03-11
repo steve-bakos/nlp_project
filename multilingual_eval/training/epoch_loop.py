@@ -94,7 +94,7 @@ def epoch_loop(
 
     nb_batch = math.ceil(nb_iter / task_accumulation_steps)
 
-    progress_bar = tqdm(total=nb_batch, file=open(os.devnull, "w"))
+    progress_bar = tqdm(total=nb_batch)
 
     optimizer.zero_grad()
     if realignment_optimizer:
@@ -219,8 +219,8 @@ def epoch_loop(
                         {
                             **(res if res is not None else {"train_step": batch_seen}),
                             "train_loss": total_loss if total_loss == 0  else float(total_loss.detach().cpu()),
-                            "realignment_loss": realignment_loss if realignment_loss == 0 else float(realignment_loss.detach().cpu()),
-                            "task_loss": task_loss if task_loss == 0 else float(task_loss.detach().cpu()),
+                            **({"realignment_loss": float(realignment_loss.detach().cpu())} if realignment_loss != 0 else {}),
+                            **({"task_loss": float(task_loss.detach().cpu())} if task_loss != 0 else {}),
                         }
                     )
                 if result_store:
@@ -228,8 +228,8 @@ def epoch_loop(
                         {
                             **(res if res is not None else {"train_step": batch_seen}),
                             "train_loss": total_loss if total_loss == 0  else float(total_loss.detach().cpu()),
-                            "realignment_loss": realignment_loss if realignment_loss == 0  else float(realignment_loss.detach().cpu()),
-                            "task_loss": task_loss if task_loss == 0  else float(task_loss.detach().cpu()),
+                            **({"realignment_loss": float(realignment_loss.detach().cpu())} if realignment_loss != 0 else {}),
+                            **({"task_loss": float(task_loss.detach().cpu())} if task_loss != 0 else {}),
                         }
                     )
 

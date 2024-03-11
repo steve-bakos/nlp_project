@@ -405,7 +405,7 @@ if __name__ == "__main__":
             results = []
             # Looping over all possible configuration of runs provided in sweep_config
             for run_config in imitate_wandb_sweep(sweep_config):
-                result_store = DictResultStore()
+                result_store = DictResultStore(single_value=False)
                 result_store.log(run_config)
                 if recorder.is_already_passed(run_config):
                     logging.info("This config was already run. Will ignore it")
