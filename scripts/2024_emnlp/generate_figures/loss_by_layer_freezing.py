@@ -31,7 +31,7 @@ if __name__ == "__main__":
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     methods = ["during_partial_freeze", "freeze_realign_unfreeze"]
-    aligners = ["awesome", "fastalign", "dico"]
+    aligners = ["awesome"] #, "fastalign", "dico"]
 
     langs = ["ar", "es", "fr", "zh", "ru"]
 
@@ -54,6 +54,9 @@ if __name__ == "__main__":
 
     for method, aligner in itertools.product(methods, aligners):
         c_idx = 0
+        last_means = []
+        last_stds = []
+        layers = []
         for i in range(args.n_layers):
 
             subdf = df[df.method == f"{method}_0_{i}_{aligner}"]
@@ -67,12 +70,17 @@ if __name__ == "__main__":
             task_loss = np.array(task_loss)
             train_loss = np.array(train_loss)
 
-            print(task_loss.shape, train_loss.shape)
             if len(task_loss.shape) < 2 or len(train_loss.shape) < 2 or task_loss.shape[0] != train_loss.shape[0] or train_loss.shape[1] < task_loss.shape[1]:
                 continue
             train_loss = train_loss[:,-task_loss.shape[1]:]
 
             realignment_loss = train_loss - task_loss
+
+            print(f"Last task loss for freezing up to layer {i} : {np.mean(task_loss[:, -1])} (std={np.std(task_loss[:,-1])})")
+
+            layers.append(i)
+            last_means.append(np.mean(task_loss[:, -1]))
+            last_stds.append(np.std(task_loss[:,-1]))
 
             plot_with_statistics(
                 list(range(realignment_loss.shape[1])),
@@ -95,6 +103,11 @@ if __name__ == "__main__":
         plt.xlabel("log steps")
         plt.ylabel("loss")
         plt.savefig(os.path.join(output_dir, f"{method}_{aligner}.png"))
+        plt.clf()
+
+        plt.bar(layers, last_means, yerr=last_stds)
+        plt.ylim((min(last_means) - max(last_stds), max(last_means) + max(last_stds)))
+        plt.savefig(os.path.join(output_dir, f"{method}_{aligner}_last_loss.png"))
         plt.clf()
 
         for subset in langs + ["avg", "same"]:
