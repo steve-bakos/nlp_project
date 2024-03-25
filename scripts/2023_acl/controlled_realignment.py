@@ -8,6 +8,7 @@ import sys
 import logging
 import datasets
 from typing import List
+from contextlib import ExitStack
 from transformers import AutoTokenizer, set_seed
 
 sys.path.append(os.curdir)
@@ -334,6 +335,7 @@ if __name__ == "__main__":
         type=int,
         default=9001
     )
+    parser.add_argument("--project_prefix", type=str, default="")
     parser.set_defaults(debug=False, large_gpu=False, use_wandb=False)
     args = parser.parse_args()
 
@@ -360,7 +362,18 @@ if __name__ == "__main__":
             "seed"
         ]["values"][:1]
 
-    with StanfordSegmenter(port=args.segmenter_port) as zh_segmenter, CSVRecorder(args.output_file, config_props=list(sweep_config["parameters"].keys())) as recorder:  # Calls Stanford Segmenter in another process, hence the context manager
+    with ExitStack() as stack:
+        if "zh" in args.right_langs or args.left_lang == "zh":
+            # Calls Stanford Segmenter in another process, hence the context manager
+            zh_segmenter = stack.enter_context(StanfordSegmenter(port=args.segmenter_port))
+        else:
+            zh_segmenter = None
+        
+        if args.output_file:
+            recorder = stack.enter_context(CSVRecorder(args.output_file, config_props=list(sweep_config["parameters"].keys())))
+        else:
+            recorder = None
+
         if args.use_wandb:
             import wandb
 
@@ -369,9 +382,9 @@ if __name__ == "__main__":
             if args.sweep_id is None:
                 # project = args.models[0] + "_" + args.strategies[0] + "_" + args.tasks[0]
                 if "distilbert-base-multilingual-cased" in args.models:
-                    project = "dmb_" + args.strategies[0] + "_" + args.tasks[0]
+                    project = "dmb_" + args.project_prefix + args.strategies[0] + "_" + args.tasks[0]
                 else:
-                    project = "3nl_" + args.strategies[0] + "_" + args.tasks[0]
+                    project = "3nl_" + args.project_prefix + args.strategies[0] + "_" + args.tasks[0]
                 sweep_id = wandb.sweep(sweep_config, project=project)
             else:
                 sweep_id = args.sweep_id
