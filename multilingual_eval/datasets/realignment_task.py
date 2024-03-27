@@ -544,6 +544,10 @@ def get_multilingual_realignment_dataset(
     - do_interleave_datasets: True to interleave all datasets and False to return a list of datasets (one for each language pair)
     """
     lang_to_id = lang_to_id or defaultdict(lambda: None)
+    # print()
+    # print('Get Multilingual...')
+    # print(lang_to_id)
+    # print()
     datasets = [
         get_realignment_dataset_for_one_pair(
             tokenizer,

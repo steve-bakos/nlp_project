@@ -1,0 +1,3 @@
+pythainlp==5.0.1
+ginza==5.1.3
+ja_ginza_electra==5.1.3

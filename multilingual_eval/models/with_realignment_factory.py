@@ -242,6 +242,7 @@ def model_with_realignment_factory(
                     else:
                         return (res[0] + realignment_loss, *res[1:])
             elif is_usual_args_used:
+                # usual_args.pop('language')
                 return super().forward(**usual_args, lang_id=lang_id)
             elif left_input_ids is not None:
                 if not return_dict:

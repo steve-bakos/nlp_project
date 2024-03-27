@@ -8,6 +8,7 @@ import sys
 import logging
 import datasets
 from typing import List
+from contextlib import ExitStack
 from transformers import AutoTokenizer, set_seed
 
 sys.path.append(os.curdir)
@@ -23,6 +24,7 @@ from multilingual_eval.training.wandb_utils import (
     wrap_train,
     imitate_wandb_sweep,
     store_dicts_in_csv,
+    CSVRecorder,
 )
 from multilingual_eval.training.training_loops import realignment_training_loop
 from multilingual_eval.training.batch_sizes import get_batch_size
@@ -59,10 +61,15 @@ def train(
     task_name = config["task"]
     seed = config["seed"]
     method = config["method"]
-    if method == "baseline":
+    if "baseline" in method:
         aligner = None
     else:
-        method, aligner = method.split("_")
+        # method, aligner = method.split("_")
+        aligner = method.split("_")[-1]
+        method = "_".join(x for x in method.split("_")[:-1])
+        
+    print(f'METHOD : {method}')
+    print(f'ALIGNER: {aligner}')
 
     # result_store allows to gather information along the experiment
     # By default, only logs them in the console
@@ -114,7 +121,13 @@ def train(
         split="train",
         limit=1000 if debug else None,
         datasets_cache_dir=data_cache_dir,
+        max_length=96
     )
+
+    # print()
+    # print('fine-tuning dataset')
+    # print(training_dataset[:5])
+    # print()
 
     # Load test dataset for target languages
     validation_datasets = get_dataset_fn(task_name, zh_segmenter=zh_segmenter)(
@@ -126,6 +139,12 @@ def train(
         interleave=False,
     )
 
+    # print()
+    # print('test dataset for target languages')
+    # for dataset in validation_datasets:
+    #     print(dataset[:5])
+    # print()
+
     # Load test dataset for source language
     source_validation_dataset = get_dataset_fn(task_name, zh_segmenter=zh_segmenter)(
         left_lang,
@@ -135,6 +154,11 @@ def train(
         datasets_cache_dir=data_cache_dir,
     )
 
+    # print()
+    # print('test dataset for source language')
+    # print(source_validation_dataset[:5])
+    # print()
+
     # Load realignment datatset
     lang_pairs = [(left_lang, right_lang) for right_lang in right_langs]
     if aligner == "fastalign":
@@ -143,6 +167,7 @@ def train(
             translation_dir,
             fastalign_dir,
             lang_pairs,
+            # lang_to_id={'en':0, 'ar':1, 'es':2, 'fr':3, 'ru':4, 'zh':5},
             max_length=96,
             seed=seed,
         )
@@ -186,6 +211,7 @@ def train(
         result_store=result_store,
         metric_fn=get_dataset_metric_fn(task_name)(),
         data_collator=collator_fn(task_name)(tokenizer),
+        model_name=model_name
     )
 
 
@@ -256,7 +282,7 @@ if __name__ == "__main__":
         "--right_langs",
         type=str,
         nargs="+",
-        default=["ar", "es", "fr", "ru", "zh"],
+        default=["ar", "es", "fr", "ru", "zh", "af", "fa", "hi"],
         help="Target languages for cross-lingual transfer",
     )
     parser.add_argument(
@@ -304,6 +330,12 @@ if __name__ == "__main__":
         dest="use_wandb",
         help="Use this option to use wandb (but must be installed first)",
     )
+    parser.add_argument(
+        "--segmenter_port",
+        type=int,
+        default=9001
+    )
+    parser.add_argument("--project_prefix", type=str, default="")
     parser.set_defaults(debug=False, large_gpu=False, use_wandb=False)
     args = parser.parse_args()
 
@@ -330,14 +362,30 @@ if __name__ == "__main__":
             "seed"
         ]["values"][:1]
 
-    with StanfordSegmenter() as zh_segmenter:  # Calls Stanford Segmenter in another process, hence the context manager
+    with ExitStack() as stack:
+        if "zh" in args.right_langs or args.left_lang == "zh":
+            # Calls Stanford Segmenter in another process, hence the context manager
+            zh_segmenter = stack.enter_context(StanfordSegmenter(port=args.segmenter_port))
+        else:
+            zh_segmenter = None
+        
+        if args.output_file:
+            recorder = stack.enter_context(CSVRecorder(args.output_file, config_props=list(sweep_config["parameters"].keys())))
+        else:
+            recorder = None
+
         if args.use_wandb:
             import wandb
 
             result_store = WandbResultStore()
 
             if args.sweep_id is None:
-                sweep_id = wandb.sweep(sweep_config, project="controlled_realignment")
+                # project = args.models[0] + "_" + args.strategies[0] + "_" + args.tasks[0]
+                if "distilbert-base-multilingual-cased" in args.models:
+                    project = "dmb_" + args.project_prefix + args.strategies[0] + "_" + args.tasks[0]
+                else:
+                    project = "3nl_" + args.project_prefix + args.strategies[0] + "_" + args.tasks[0]
+                sweep_id = wandb.sweep(sweep_config, project=project)
             else:
                 sweep_id = args.sweep_id
 
@@ -364,7 +412,7 @@ if __name__ == "__main__":
                 zh_segmenter=zh_segmenter,
             )
 
-            wandb.agent(sweep_id, final_train_fn, project="controlled_realignment")
+            wandb.agent(sweep_id, final_train_fn, project=project)
         else:
             datasets.disable_progress_bar()
             results = []
@@ -372,6 +420,9 @@ if __name__ == "__main__":
             for run_config in imitate_wandb_sweep(sweep_config):
                 result_store = DictResultStore()
                 result_store.log(run_config)
+                if recorder.is_already_passed(run_config):
+                    logging.info("This config was already run. Will ignore it")
+                    continue
                 train(
                     args.left_lang,
                     args.right_langs,
@@ -389,6 +440,4 @@ if __name__ == "__main__":
                     n_epochs=args.n_epochs,
                     result_store=result_store,
                 )
-                results.append(result_store.get_results())
-
-            store_dicts_in_csv(args.output_file, results)
+                recorder.add(result_store.get_results())

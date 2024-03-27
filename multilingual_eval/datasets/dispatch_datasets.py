@@ -160,6 +160,22 @@ def model_fn_from_scratch(task_name, with_realignment=False):
     }[task_name]
 
 
+from transformers import DataCollatorForTokenClassification
+
+class CustomDataCollator(DataCollatorForTokenClassification):
+    def __call__(self, features):
+        # Extract language information and then remove it from the features
+        languages = [feature.pop("language", None) for feature in features]
+
+        # Use the parent class's method to collate the rest of the data
+        batch = super().__call__(features)
+
+        # Add the languages back to the batch
+        batch["language"] = languages
+
+        return batch
+
+
 def collator_fn(task_name):
     if task_name in ["wikiann", "udpos", "xtreme.udpos"]:
         return DataCollatorForTokenClassification

@@ -1,8 +1,10 @@
+import os
 import sys
 import csv
 import datasets
 import traceback
 import itertools
+import logging
 from typing import Callable, Any, Optional, List
 
 from multilingual_eval.loggers import post_on_slack
@@ -81,3 +83,67 @@ def store_dicts_in_csv(fname: str, infos: List[dict]):
         writer.writerow(column_names)
         for info in infos:
             writer.writerow([str(info.get(c, "")) for c in column_names])
+
+class CSVRecorder:
+
+    def __init__(self, fname: str, config_props = None):
+        self.fname = fname
+        self.config_props = config_props
+        self.props = None
+        self.file = None
+        self.writer = None
+        self.already_passed = set()
+        self.logger = logging.getLogger('csv_recorder')
+
+    def __enter__(self):
+        possible_props = []
+        config_props_ids = None
+        if os.path.isfile(self.fname):
+            self.logger.info(f"Result file {self.fname} already exists")
+            with open(self.fname, "r") as f:
+                reader = csv.reader(f, delimiter=',')
+                line_iter = iter(reader)
+                try:
+                    possible_props = next(line_iter)
+                    self.logger.debug(f"Header was parsed successfuly")
+                except StopIteration:
+                    pass
+                if possible_props and self.config_props:
+                    try:
+                        config_props_ids = [possible_props.index(p) for p in self.config_props]
+                    except ValueError:
+                        config_props_ids = []
+                if config_props_ids:
+                    for line in line_iter:
+                        self.already_passed.add(tuple(line[i] for i in config_props_ids))
+            self.logger.info(f"Found {len(self.already_passed)} existing runs")
+        if len(possible_props) > 0:
+            self.file = open(self.fname, "a").__enter__()
+            self.props = possible_props
+        else:
+            self.file = open(self.fname, "w").__enter__()
+        self.writer = csv.writer(self.file, delimiter=",")
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.file:
+            self.file.__exit__(self, exc_type, exc_val, exc_tb)
+        self.props = None
+        self.file = None
+        self.writer = None
+
+    def is_already_passed(self, config: dict):
+        if self.config_props:
+            key = tuple(str(config[key]) for key in self.config_props)
+            return key in self.already_passed
+        return False
+
+    def add(self, info: dict):
+        if self.props is None:
+            self.props = list(info.keys())
+            self.writer.writerow(self.props)
+        self.writer.writerow([str(info.get(c, "")) for c in self.props])
+        self.file.flush()
+        if self.config_props:
+            key = tuple(info[key] for key in self.config_props)
+            self.already_passed.add(key)

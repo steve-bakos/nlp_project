@@ -67,4 +67,4 @@ if __name__ == "__main__":
             left_tokens = left_tokenizer.tokenize(left_line)
             right_tokens = right_tokenizer.tokenize(right_line)
 
-            writer.write(" ".join(left_tokens) + " ||| " + " ".join(right_tokens) + "\n")
+            writer.write(" ".join(left_tokens).strip() + " ||| " + " ".join(right_tokens).strip() + "\n")

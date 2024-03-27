@@ -63,6 +63,7 @@ def evaluate_token_classification(
     all_predictions = None
     for i, batch in enumerate(eval_dataloader):
         labels = batch[label_key].numpy()
+        # print(batch)
         batch = bring_batch_to_model(batch, model)
 
         predictions = model(**batch, return_dict=True).logits

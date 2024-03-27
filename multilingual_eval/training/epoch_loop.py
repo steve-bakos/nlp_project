@@ -12,6 +12,18 @@ from transformers.optimization import get_scheduler
 from multilingual_eval.training.utils import bring_batch_to_model, get_next_or_restart
 from multilingual_eval.training.states import TrainingState
 
+# # Define a function to get the weight multiplier based on the language ID
+# def get_loss_multiplier(lang_id):
+#     # Define the multipliers for each language ID
+#     multipliers = {
+#         0: 0.5,  # en
+#         1: 1.0,  # ar
+#         2: 0.7,  # es
+#         3: 0.7,  # fr
+#         4: 0.8,  # ru
+#         5: 1.5,  # zh
+#     }
+#     return multipliers.get(lang_id, 1.0)  # Default multiplier is 1.0
 
 def epoch_loop(
     model,
@@ -19,6 +31,8 @@ def epoch_loop(
     scheduler=None,
     task_dataloader=None,
     realignment_dataloader=None,
+    realignment_optimizer=None,
+    realignment_scheduler=None,
     task_accumulation_steps=1,
     realignment_steps_by_finetuning=1,
     logging_steps=100,
@@ -30,6 +44,8 @@ def epoch_loop(
     training_state: Optional[TrainingState] = None,
     log_first_sample=False,
     parallelism=False,
+    separate_backward=False,
+    realignment_ignore_parameters: Optional[list] = None,
 ):
     """
     Function to perform an epoch of training, with specific task samples and/or realignment task samples
@@ -60,6 +76,11 @@ def epoch_loop(
         logging.warning(
             f"nb_iter was provided ({nb_iter}) but so was task_dataloader. nb_iter will be ignored."
         )
+    if not separate_backward and bool(realignment_ignore_parameters):
+        raise Exception(
+            f"If realignment_ignore_parameters ({bool(realignment_ignore_parameters is not None)}) is set "
+            + "then separate_backward must be set to True (was set to False)"
+        )
 
     if task_dataloader is not None:
         nb_iter = len(task_dataloader)
@@ -75,13 +96,17 @@ def epoch_loop(
 
     progress_bar = tqdm(total=nb_batch, file=open(os.devnull, "w"))
 
+    optimizer.zero_grad()
+    if realignment_optimizer:
+        realignment_optimizer.zero_grad()
+
     for i, batch in (
         enumerate(task_dataloader)
         if task_dataloader is not None
         else enumerate(itertools.repeat(None, nb_iter))
     ):
         if i % task_accumulation_steps == 0:
-            optimizer.zero_grad()
+            
             accumulated_steps = 0
             total_loss = 0
             task_loss = 0
@@ -105,14 +130,48 @@ def epoch_loop(
                             "left_input_ids"
                         ].shape[0]
                         training_state.nb_realignment_steps_seen += 1
+                    
+                    # print()
+                    # print('Realignment Batch')
+                    # print(realignment_batch)
+                    # print()
+
+                    # realignment_batch.pop('left_lang_id', None)
+                    # realignment_batch.pop('right_lang_id', None)
 
                     realignment_batch = bring_batch_to_model(realignment_batch, model)
                     outputs = model(**realignment_batch, return_dict=True)
+
+                    # print()
+                    # print('Outputs')
+                    # print(outputs)
+                    # print()
+
                     realignment_loss += (
                         realignment_coef / realignment_steps_by_finetuning
                     ) * outputs.loss
 
+                if separate_backward or realignment_optimizer:
+                    realignment_loss.backward()
+
+                if realignment_optimizer:
+                    realignment_optimizer.step()
+                    realignment_optimizer.zero_grad()
+
+                    if realignment_scheduler:
+                        realignment_scheduler.step()
+
+                    optimizer.zero_grad()
+                
+                if realignment_ignore_parameters:
+                    for name, param in model.named_parameters():
+                        if name in realignment_ignore_parameters:
+                            param.grad = None
+                
+                total_loss += realignment_loss
+
         if batch is not None:
+
             if parallelism and torch.cuda.device_count() > 1:
                 outputs = torch.nn.parallel.data_parallel(model, None, module_kwargs=batch)
                 tmp_loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
@@ -128,13 +187,15 @@ def epoch_loop(
                 training_state.nb_finetuning_steps_seen += 1
 
             task_loss /= max(1, accumulated_steps)
+            total_loss += task_loss
 
-            # Note that the coefficient is already in the model definition
-            total_loss = task_loss + realignment_loss
-
-            total_loss.backward()
+            if accumulated_steps > 0 and (separate_backward or realignment_optimizer):
+                task_loss.backward()
+            else:
+                total_loss.backward()
 
             optimizer.step()
+            optimizer.zero_grad()
             if scheduler is not None:
                 scheduler.step()
 
@@ -188,6 +249,10 @@ def fine_tuning_loop(
     steps=2_000,
     learning_rate=2e-5,
 ):
+
+    print()
+    print('INSIDE FINE TUNING LOOP')
+
     model.train()
     # Fix random seed for Pytorch and numpy
     if seed is not None:

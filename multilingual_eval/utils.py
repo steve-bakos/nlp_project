@@ -207,6 +207,16 @@ class ThaiTokenizer:
         return list(filter(lambda x: len(x) > 0, words))
 
 
+class JapaneseTokenizer:
+    def __init__(self):
+        import spacy
+        self.processor = spacy.load("ja_ginza_electra")
+
+    def tokenize(self, sentence):
+        doc = self.processor(sentence)
+        return [token.orth_ for token in doc]
+
+
 class LanguageSpecificTokenizer:
     """
     Tokenizer that tokenized differently according to language.
@@ -227,6 +237,8 @@ class LanguageSpecificTokenizer:
             else:
                 logging.warning(f"LanguageSpecificTokenizer for Chinese was not passed a zh_segmenter, will default to RegexTokenizer based on whitespaces.")
                 self._tokenizer = RegexTokenizer()
+        elif lang == "ja":
+            self._tokenizer = JapaneseTokenizer()
         else:
             self._tokenizer = RegexTokenizer()
 
