@@ -4,15 +4,12 @@ from pathlib import Path
 from comet import download_model, load_from_checkpoint
 import itertools
 from contextlib import ExitStack
-
+import torch
 
 def prepare_directories(data_dir: str, dataset: str, subdirs, thresholds):
     for subdir, thresh in itertools.product(subdirs, thresholds):
         new_dir = os.path.join(data_dir, subdir, f"{dataset}_filtered_{thresh}")
-        if os.path.exists(new_dir):
-            print(f"Target directory {new_dir} already exist, will erase it first")
-            shutil.rmtree(new_dir)
-        Path(new_dir).mkdir()
+        Path(new_dir).mkdir(exist_ok=True, parents=True)
 
 
 def get_languages(langs, translation_dir, left_lang):
@@ -31,6 +28,8 @@ def get_languages(langs, translation_dir, left_lang):
 
 
 if __name__ == "__main__":
+    torch.set_float32_matmul_precision('medium')
+
     model_path = download_model("Unbabel/wmt22-cometkiwi-da")
     model = load_from_checkpoint(model_path)
 
@@ -59,7 +58,7 @@ if __name__ == "__main__":
     )
 
     translation_dir = os.path.join(args.data_dir, args.translation_dir, args.dataset)
-    alignment_dirs = [os.path.join(args.data_dir, args.alignment_dirs, args.dataset)]
+    alignment_dirs = [os.path.join(args.data_dir, subdir, args.dataset) for subdir in args.alignment_dirs]
 
     languages = get_languages(args.right_langs, translation_dir, args.left_lang)
 
@@ -87,9 +86,9 @@ if __name__ == "__main__":
             with open(
                 os.path.join(
                     alignment_dir,
-                    f"{args.left_lang}-{lang}.tokenized.train.txt",
+                    f"{args.left_lang}-{lang}.train",
                 )
-            ) as f:
+            ) as file:
                 for line in file:
                     this_data.append(line.strip())
             alignment_data.append(this_data)
