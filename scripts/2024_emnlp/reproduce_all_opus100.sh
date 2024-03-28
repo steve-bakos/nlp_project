@@ -31,27 +31,6 @@ export FASTALIGN_DIR=$FASTALIGN_DIR
 export DICOALIGN_DIR=$DICOALIGN_DIR
 export AWESOME_DIR=$AWESOME_DIR
 
-##################
-# FINE-TUNING ONLY
-##################
-
-echo ""
-echo "Testing controlled_realignment.py staged-realignment..."
-echo ""
-python scripts/2023_acl/controlled_realignment.py \
-    --translation_dir $TRANSLATION_DIR/$DATASET \
-    --fastalign_dir $FASTALIGN_DIR/$DATASET \
-    --dico_dir $DICOALIGN_DIR/$DATASET \
-    --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies baseline \
-    --models xlm-roberta-base \
-    --tasks udpos \
-    --cache_dir $CACHE_DIR \
-    --n_epochs 5 \
-    --right_langs $langs \
-    --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
-
 
 ################
 # BASELINES
