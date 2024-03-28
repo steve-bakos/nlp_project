@@ -104,7 +104,7 @@ if __name__ == "__main__":
                             args.data_dir,
                             args.translation_dir,
                             f"{args.dataset}_filtered_{t}",
-                            f"{args.left_lang}-{lang}.train",
+                            f"{args.left_lang}-{lang}.tokenized.train.txt",
                         ),
                         "w",
                     )
