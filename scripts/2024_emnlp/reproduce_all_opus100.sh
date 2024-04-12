@@ -4,7 +4,8 @@ set -e
 
 DATA_DIR=$1
 DATASET=$2
-ADD_ARGS=$3
+MODEL=$3
+ADD_ARGS=$4
 
 #langs="ar es fr ru zh af fa hi"
 langs="bg cs de es lv af ar ca da el fa fi fr he hi hu it ja ko lt no pl pt ro ru sk sl sv ta th tr uk vi zh"
@@ -45,13 +46,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies before_fastalign \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -63,13 +64,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies before_awesome \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -81,13 +82,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies before_dico \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -99,13 +100,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_fastalign \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -117,13 +118,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_awesome \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -135,13 +136,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_dico \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 ###########################################
@@ -157,13 +158,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies freeze_realign_unfreeze_fastalign \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 echo ""
 echo "Testing controlled_realignment.py staged-realignment..."
@@ -174,13 +175,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies freeze_realign_unfreeze_awesome \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -192,13 +193,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies freeze_realign_unfreeze_dico \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 ###########################################
@@ -214,13 +215,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies freeze_realign_unfreeze_last_6_fastalign \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -232,13 +233,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies freeze_realign_unfreeze_last_6_awesome \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -250,13 +251,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies freeze_realign_unfreeze_last_6_dico \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 ###########################################
@@ -272,13 +273,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_partial_freeze_front_fastalign \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -290,13 +291,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_partial_freeze_front_awesome \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -308,13 +309,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_partial_freeze_front_dico \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 ##########################################
@@ -330,13 +331,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_partial_freeze_back_fastalign \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -348,13 +349,13 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_partial_freeze_back_awesome \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -366,10 +367,10 @@ python scripts/2023_acl/controlled_realignment.py \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
     --strategies during_partial_freeze_back_dico \
-    --models xlm-roberta-base \
+    --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
     --n_epochs 5 \
     --right_langs $langs \
     --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/$DATASET.csv $ADD_ARGS
+    --output_file $RESULT_DIR/${MODEL}__$DATASET.csv $ADD_ARGS
