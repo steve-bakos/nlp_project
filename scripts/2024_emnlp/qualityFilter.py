@@ -5,10 +5,11 @@ from comet import download_model, load_from_checkpoint
 import itertools
 from contextlib import ExitStack
 import torch
+import numpy as np
 
-def prepare_directories(data_dir: str, dataset: str, subdirs, thresholds):
-    for subdir, thresh in itertools.product(subdirs, thresholds):
-        new_dir = os.path.join(data_dir, subdir, f"{dataset}_filtered_{thresh}")
+def prepare_directories(data_dir: str, dataset: str, subdirs, percentiles):
+    for subdir, perc in itertools.product(subdirs, percentiles):
+        new_dir = os.path.join(data_dir, subdir, f"{dataset}_filtered_percent_{perc}")
         Path(new_dir).mkdir(exist_ok=True, parents=True)
 
 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument("--left_lang", type=str, default="en")
     parser.add_argument("--right_langs", type=str, nargs="+", default=None)
     parser.add_argument(
-        "--thresholds", type=float, nargs="+", default=[0.4, 0.5, 0.6, 0.7, 0.8]
+        "--percentiles", type=float, nargs="+", default=[25, 37, 50, 62, 75]
     )
     parser.add_argument("--batch_size", type=int, default=32)
     args = parser.parse_args()
@@ -54,15 +55,13 @@ if __name__ == "__main__":
         args.data_dir,
         args.dataset,
         [args.translation_dir, *args.alignment_dirs],
-        args.thresholds,
+        args.percentiles,
     )
 
     translation_dir = os.path.join(args.data_dir, args.translation_dir, args.dataset)
     alignment_dirs = [os.path.join(args.data_dir, subdir, args.dataset) for subdir in args.alignment_dirs]
 
     languages = get_languages(args.right_langs, translation_dir, args.left_lang)
-
-    thresholds = sorted(args.thresholds)
 
     for lang in languages:
         with open(
@@ -93,7 +92,11 @@ if __name__ == "__main__":
                     this_data.append(line.strip())
             alignment_data.append(this_data)
 
-        model_output = model.predict(data, batch_size=args.batch_size, gpus=1)
+        model_output = model.predict(data, batch_size=args.batch_size, gpus=1, num_workers=os.cpu_count() - 1)
+
+        scores = model_output[0]
+
+        thresholds = np.percentile(scores, args.percentiles)
 
         line_counters = [0] * len(thresholds)
         with ExitStack() as stack:
@@ -103,13 +106,13 @@ if __name__ == "__main__":
                         os.path.join(
                             args.data_dir,
                             args.translation_dir,
-                            f"{args.dataset}_filtered_{t}",
+                            f"{args.dataset}_filtered_percent_{p}",
                             f"{args.left_lang}-{lang}.tokenized.train.txt",
                         ),
                         "w",
                     )
                 )
-                for t in thresholds
+                for p in args.percentiles
             ]
             alignment_writers = [
                 [
@@ -118,7 +121,7 @@ if __name__ == "__main__":
                             os.path.join(
                                 args.data_dir,
                                 subdir,
-                                f"{args.dataset}_filtered_{t}",
+                                f"{args.dataset}_filtered_percent_{p}",
                                 f"{args.left_lang}-{lang}.train",
                             ),
                             "w",
@@ -126,7 +129,7 @@ if __name__ == "__main__":
                     )
                     for subdir in args.alignment_dirs
                 ]
-                for t in thresholds
+                for p in args.percentiles
             ]
 
             for i_data in range(len(data)):
