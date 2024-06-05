@@ -371,6 +371,20 @@ def realignment_training_loop(
                         param.requires_grad = False
 
                 print('Freezing done...')
+            
+            if strategy == "freeze_realign_unfreeze_last_half" and "roberta" in model_name:
+                num_layers = len(model.roberta.encoder.layer)
+                layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+                # Calculate the starting index for freezing (freezing the last half of the layers)
+                start_freezing_from_layer = num_layers - layers_to_freeze
+
+                print(f'Freezing last {layers_to_freeze} transformer blocks...')
+                for i in range(start_freezing_from_layer, num_layers):
+                    for param in model.roberta.encoder.layer[i].parameters():
+                        param.requires_grad = False
+
+                print('Freezing done...')
 
             if re.match(r"freeze_realign_unfreeze_[0-9]+_[0-9]+", strategy):
                 *_, first_layer, last_layer = strategy.split("_")
@@ -481,6 +495,20 @@ def realignment_training_loop(
                         param.requires_grad = True
 
                 print('Unfreezing done...')
+
+            if strategy == "freeze_realign_unfreeze_last_half" and "roberta" in model_name:
+                num_layers = len(model.roberta.encoder.layer)
+                layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+                # Calculate the starting index for freezing (freezing the last half of the layers)
+                start_freezing_from_layer = num_layers - layers_to_freeze
+
+                print(f'Unfreezing last {layers_to_freeze} transformer blocks...')
+                for i in range(start_freezing_from_layer, num_layers):
+                    for param in model.roberta.encoder.layer[i].parameters():
+                        param.requires_grad = True
+
+                print('Unfreezing done...')
             
             if re.match(r"freeze_realign_unfreeze_[0-9]+_[0-9]+", strategy):
                 *_, first_layer, last_layer = strategy.split("_")
@@ -562,6 +590,21 @@ def realignment_training_loop(
 
         print('Freezing done...')
     
+    if strategy == "during_freeze_realign_unfreeze_last_half" and "roberta" in model_name:
+        num_layers = len(model.roberta.encoder.layer)
+        layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+        # Calculate the starting index for freezing (freezing the last half of the layers)
+        start_freezing_from_layer = num_layers - layers_to_freeze
+
+        print(f'Freezing last {layers_to_freeze} transformer blocks...')
+        for i in range(start_freezing_from_layer, num_layers):
+            for param in model.roberta.encoder.layer[i].parameters():
+                param.requires_grad = False
+
+        print('Freezing done...')
+    
+
     realignment_optimizer = None
     realignment_scheduler = None
     realignment_ignore_parameters = []
