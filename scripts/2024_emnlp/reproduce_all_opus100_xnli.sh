@@ -53,40 +53,40 @@ python scripts/2023_acl/controlled_realignment.py \
     --project_prefix "34langs_" \
     --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
-echo ""
-echo "Testing controlled_realignment.py staged-realignment..."
-echo ""
-python scripts/2023_acl/controlled_realignment.py \
-    --translation_dir $TRANSLATION_DIR/$DATASET \
-    --fastalign_dir $FASTALIGN_DIR/$DATASET \
-    --dico_dir $DICOALIGN_DIR/$DATASET \
-    --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies before_fastalign \
-    --models $MODEL \
-    --tasks xnli \
-    --cache_dir $CACHE_DIR \
-    --n_epochs 2 \
-    --right_langs $langs \
-    --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
+# echo ""
+# echo "Testing controlled_realignment.py staged-realignment..."
+# echo ""
+# python scripts/2023_acl/controlled_realignment.py \
+#     --translation_dir $TRANSLATION_DIR/$DATASET \
+#     --fastalign_dir $FASTALIGN_DIR/$DATASET \
+#     --dico_dir $DICOALIGN_DIR/$DATASET \
+#     --awesome_dir $AWESOME_DIR/$DATASET \
+#     --strategies before_fastalign \
+#     --models $MODEL \
+#     --tasks xnli \
+#     --cache_dir $CACHE_DIR \
+#     --n_epochs 2 \
+#     --right_langs $langs \
+#     --project_prefix "34langs_" \
+#     --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
 
-echo ""
-echo "Testing controlled_realignment.py staged-realignment..."
-echo ""
-python scripts/2023_acl/controlled_realignment.py \
-    --translation_dir $TRANSLATION_DIR/$DATASET \
-    --fastalign_dir $FASTALIGN_DIR/$DATASET \
-    --dico_dir $DICOALIGN_DIR/$DATASET \
-    --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies before_awesome \
-    --models $MODEL \
-    --tasks xnli \
-    --cache_dir $CACHE_DIR \
-    --n_epochs 2 \
-    --right_langs $langs \
-    --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
+# echo ""
+# echo "Testing controlled_realignment.py staged-realignment..."
+# echo ""
+# python scripts/2023_acl/controlled_realignment.py \
+#     --translation_dir $TRANSLATION_DIR/$DATASET \
+#     --fastalign_dir $FASTALIGN_DIR/$DATASET \
+#     --dico_dir $DICOALIGN_DIR/$DATASET \
+#     --awesome_dir $AWESOME_DIR/$DATASET \
+#     --strategies before_awesome \
+#     --models $MODEL \
+#     --tasks xnli \
+#     --cache_dir $CACHE_DIR \
+#     --n_epochs 2 \
+#     --right_langs $langs \
+#     --project_prefix "34langs_" \
+#     --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -165,39 +165,39 @@ python scripts/2023_acl/controlled_realignment.py \
 # PARTIAL-REALIGNMENT BEFORE - FRONT FROZEN
 ###########################################
 
-echo ""
-echo "Testing controlled_realignment.py staged-realignment..."
-echo ""
-python scripts/2023_acl/controlled_realignment.py \
-    --translation_dir $TRANSLATION_DIR/$DATASET \
-    --fastalign_dir $FASTALIGN_DIR/$DATASET \
-    --dico_dir $DICOALIGN_DIR/$DATASET \
-    --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies freeze_realign_unfreeze_fastalign \
-    --models $MODEL \
-    --tasks xnli \
-    --cache_dir $CACHE_DIR \
-    --n_epochs 2 \
-    --right_langs $langs \
-    --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
+# echo ""
+# echo "Testing controlled_realignment.py staged-realignment..."
+# echo ""
+# python scripts/2023_acl/controlled_realignment.py \
+#     --translation_dir $TRANSLATION_DIR/$DATASET \
+#     --fastalign_dir $FASTALIGN_DIR/$DATASET \
+#     --dico_dir $DICOALIGN_DIR/$DATASET \
+#     --awesome_dir $AWESOME_DIR/$DATASET \
+#     --strategies freeze_realign_unfreeze_fastalign \
+#     --models $MODEL \
+#     --tasks xnli \
+#     --cache_dir $CACHE_DIR \
+#     --n_epochs 2 \
+#     --right_langs $langs \
+#     --project_prefix "34langs_" \
+#     --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
-echo ""
-echo "Testing controlled_realignment.py staged-realignment..."
-echo ""
-python scripts/2023_acl/controlled_realignment.py \
-    --translation_dir $TRANSLATION_DIR/$DATASET \
-    --fastalign_dir $FASTALIGN_DIR/$DATASET \
-    --dico_dir $DICOALIGN_DIR/$DATASET \
-    --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies freeze_realign_unfreeze_awesome \
-    --models $MODEL \
-    --tasks xnli \
-    --cache_dir $CACHE_DIR \
-    --n_epochs 2 \
-    --right_langs $langs \
-    --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
+# echo ""
+# echo "Testing controlled_realignment.py staged-realignment..."
+# echo ""
+# python scripts/2023_acl/controlled_realignment.py \
+#     --translation_dir $TRANSLATION_DIR/$DATASET \
+#     --fastalign_dir $FASTALIGN_DIR/$DATASET \
+#     --dico_dir $DICOALIGN_DIR/$DATASET \
+#     --awesome_dir $AWESOME_DIR/$DATASET \
+#     --strategies freeze_realign_unfreeze_awesome \
+#     --models $MODEL \
+#     --tasks xnli \
+#     --cache_dir $CACHE_DIR \
+#     --n_epochs 2 \
+#     --right_langs $langs \
+#     --project_prefix "34langs_" \
+#     --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
 
 echo ""
@@ -222,22 +222,7 @@ python scripts/2023_acl/controlled_realignment.py \
 # PARTIAL-REALIGNMENT BEFORE - BACK FROZEN
 ###########################################
 
-echo ""
-echo "Testing controlled_realignment.py staged-realignment..."
-echo ""
-python scripts/2023_acl/controlled_realignment.py \
-    --translation_dir $TRANSLATION_DIR/$DATASET \
-    --fastalign_dir $FASTALIGN_DIR/$DATASET \
-    --dico_dir $DICOALIGN_DIR/$DATASET \
-    --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies freeze_realign_unfreeze_last_6_fastalign \
-    --models $MODEL \
-    --tasks xnli \
-    --cache_dir $CACHE_DIR \
-    --n_epochs 2 \
-    --right_langs $langs \
-    --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
+
 
 
 echo ""
@@ -248,7 +233,7 @@ python scripts/2023_acl/controlled_realignment.py \
     --fastalign_dir $FASTALIGN_DIR/$DATASET \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies freeze_realign_unfreeze_last_6_awesome \
+    --strategies freeze_realign_unfreeze_last_half_dico \
     --models $MODEL \
     --tasks xnli \
     --cache_dir $CACHE_DIR \
@@ -257,24 +242,40 @@ python scripts/2023_acl/controlled_realignment.py \
     --project_prefix "34langs_" \
     --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
+# echo ""
+# echo "Testing controlled_realignment.py staged-realignment..."
+# echo ""
+# python scripts/2023_acl/controlled_realignment.py \
+#     --translation_dir $TRANSLATION_DIR/$DATASET \
+#     --fastalign_dir $FASTALIGN_DIR/$DATASET \
+#     --dico_dir $DICOALIGN_DIR/$DATASET \
+#     --awesome_dir $AWESOME_DIR/$DATASET \
+#     --strategies freeze_realign_unfreeze_last_half_fastalign \
+#     --models $MODEL \
+#     --tasks xnli \
+#     --cache_dir $CACHE_DIR \
+#     --n_epochs 2 \
+#     --right_langs $langs \
+#     --project_prefix "34langs_" \
+#     --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
-echo ""
-echo "Testing controlled_realignment.py staged-realignment..."
-echo ""
-python scripts/2023_acl/controlled_realignment.py \
-    --translation_dir $TRANSLATION_DIR/$DATASET \
-    --fastalign_dir $FASTALIGN_DIR/$DATASET \
-    --dico_dir $DICOALIGN_DIR/$DATASET \
-    --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies freeze_realign_unfreeze_last_6_dico \
-    --models $MODEL \
-    --tasks xnli \
-    --cache_dir $CACHE_DIR \
-    --n_epochs 2 \
-    --right_langs $langs \
-    --project_prefix "34langs_" \
-    --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
+# echo ""
+# echo "Testing controlled_realignment.py staged-realignment..."
+# echo ""
+# python scripts/2023_acl/controlled_realignment.py \
+#     --translation_dir $TRANSLATION_DIR/$DATASET \
+#     --fastalign_dir $FASTALIGN_DIR/$DATASET \
+#     --dico_dir $DICOALIGN_DIR/$DATASET \
+#     --awesome_dir $AWESOME_DIR/$DATASET \
+#     --strategies freeze_realign_unfreeze_last_half_awesome \
+#     --models $MODEL \
+#     --tasks xnli \
+#     --cache_dir $CACHE_DIR \
+#     --n_epochs 2 \
+#     --right_langs $langs \
+#     --project_prefix "34langs_" \
+#     --output_file $RESULT_DIR/${MODEL}__xnli__$DATASET.csv $ADD_ARGS
 
 ###########################################
 # PARTIAL-REALIGNMENT DURING - FRONT FROZEN

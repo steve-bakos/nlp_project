@@ -214,7 +214,7 @@ python scripts/2023_acl/controlled_realignment.py \
     --fastalign_dir $FASTALIGN_DIR/$DATASET \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies freeze_realign_unfreeze_last_6_fastalign \
+    --strategies freeze_realign_unfreeze_last_half_fastalign \
     --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
@@ -232,7 +232,7 @@ python scripts/2023_acl/controlled_realignment.py \
     --fastalign_dir $FASTALIGN_DIR/$DATASET \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies freeze_realign_unfreeze_last_6_awesome \
+    --strategies freeze_realign_unfreeze_last_half_awesome \
     --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
@@ -250,7 +250,7 @@ python scripts/2023_acl/controlled_realignment.py \
     --fastalign_dir $FASTALIGN_DIR/$DATASET \
     --dico_dir $DICOALIGN_DIR/$DATASET \
     --awesome_dir $AWESOME_DIR/$DATASET \
-    --strategies freeze_realign_unfreeze_last_6_dico \
+    --strategies freeze_realign_unfreeze_last_half_dico \
     --models $MODEL \
     --tasks udpos \
     --cache_dir $CACHE_DIR \
