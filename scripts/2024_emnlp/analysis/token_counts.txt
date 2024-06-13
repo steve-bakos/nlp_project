@@ -23,3 +23,12 @@ Arabic (ar): 2206966283
 Hebrew (he): 917877352
 Hindi (hi): 277735464
 Italian (it): 4824801365
+Japanese (ja): 4831462085
+Polish (pl): 3065452975
+Portuguese (pt): 3008874390
+Swedish (sv): 3321952695
+Thai (th): 322724562
+Ukrainian (uk): 3362894904
+Vietnamese (vi): 1811094422
+Chinese (zh): 3904296834
+Russian (ru): 5896340232

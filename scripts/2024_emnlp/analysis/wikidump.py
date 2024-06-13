@@ -6,7 +6,6 @@ from tqdm import tqdm
 from collections import defaultdict
 from transformers import AutoTokenizer
 import time
-import fugashi
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
 
@@ -79,9 +78,9 @@ def get_tokenizer(lang_code):
     elif lang_code == "sv":
         print("Using KB/bert-base-swedish-cased tokenizer")
         return AutoTokenizer.from_pretrained("KB/bert-base-swedish-cased")
-    elif lang_code == "uk":
-        print("Using Ukrainian-NLP/uk-bert-base tokenizer")
-        return AutoTokenizer.from_pretrained("Ukrainian-NLP/uk-bert-base")
+    # elif lang_code == "uk":
+    #     print("Using Ukrainian-NLP/uk-bert-base tokenizer")
+    #     return AutoTokenizer.from_pretrained("Ukrainian-NLP/uk-bert-base")
     elif lang_code == "vi":
         print("Using vinai/phobert-base tokenizer")
         return AutoTokenizer.from_pretrained("vinai/phobert-base")
@@ -144,9 +143,11 @@ def get_tokenizer(lang_code):
 def download_dump(language_code, retries=3, delay=5):
     url = f"{base_url}/{language_code}wiki/latest/{language_code}wiki-latest-pages-articles.xml.bz2"
     file_path = f"{dump_directory}/{language_code}wiki-latest-pages-articles.xml.bz2"
+    
     if os.path.exists(file_path):
         print(f"{file_path} already exists. Skipping download.")
         return file_path
+    
     for attempt in range(retries):
         try:
             response = requests.get(url, stream=True)
