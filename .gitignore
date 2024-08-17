@@ -18,3 +18,4 @@ data/dico-align/
 data/translation/
 scripts/2024_emnlp/analysis/lang2vec
 scripts/2024_emnlp/analysis/dumps/*
+venv
