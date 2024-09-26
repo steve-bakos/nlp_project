@@ -160,6 +160,32 @@ def realignment_training_loop(
                 else:
                     logging.info(f"TransformerBlock {i}: Frozen")
 
+        elif model_name.startswith("bert-base"):
+            if any(param.requires_grad for param in model.bert.embeddings.parameters()):
+                logging.info("Embedding Space: Unfrozen")
+            else:
+                logging.info("Embedding Space: Frozen")
+
+            logging.info("Word Embeddings: {}".format(
+                model.bert.embeddings.word_embeddings.weight.requires_grad)
+            )
+            logging.info("Position Embeddings: {}".format(
+                model.bert.embeddings.position_embeddings.weight.requires_grad)
+            )
+            logging.info("LayerNorm: {}".format(
+                model.bert.embeddings.LayerNorm.weight.requires_grad)
+            )
+            logging.info("Dropout: {}".format(
+                model.bert.embeddings.dropout.p)
+            )
+
+            # Log the status of transformer layers
+            for i, layer in enumerate(model.bert.encoder.layer):
+                if any(param.requires_grad for param in layer.parameters()):
+                    logging.info(f"TransformerBlock {i}: Unfrozen")
+                else:
+                    logging.info(f"TransformerBlock {i}: Frozen")
+
         else:
             logging.warning(f"Model type '{model_name}' not recognized. No logging performed.")
 
@@ -372,6 +398,31 @@ def realignment_training_loop(
 
                 print('Freezing done...')
             
+            if strategy == "freeze_realign_unfreeze" and model.startswith("bert"):
+                num_layers = len(model.bert.encoder.layer)
+                layers_to_freeze = num_layers // 2  # Freezing the first half of the layers
+
+                print(f'Freezing first {layers_to_freeze} encoder blocks...')
+                for i in range(layers_to_freeze):
+                    for param in model.bert.encoder.layer[i].parameters():
+                        param.requires_grad = False
+
+                print('Freezing done...')
+
+            if strategy == "freeze_realign_unfreeze_last_half" and model.startswith("bert"):
+                num_layers = len(model.bert.encoder.layer)
+                layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+                # Calculate the starting index for freezing (freezing the last half of the layers)
+                start_freezing_from_layer = num_layers - layers_to_freeze
+
+                print(f'Freezing last {layers_to_freeze} encoder blocks...')
+                for i in range(start_freezing_from_layer, num_layers):
+                    for param in model.bert.encoder.layer[i].parameters():
+                        param.requires_grad = False
+
+                print('Freezing done...')
+            
             if strategy == "freeze_realign_unfreeze_last_half" and "roberta" in model_name:
                 num_layers = len(model.roberta.encoder.layer)
                 layers_to_freeze = num_layers // 2  # Number of layers to freeze
@@ -395,6 +446,8 @@ def realignment_training_loop(
                         embeddings = model.roberta.embeddings
                     elif "distilbert" in model_name:
                         embeddings = model.distilbert.embeddings
+                    elif model_name.startswith("bert"):
+                        embeddings = model.bert.embeddings
                     else:
                         raise NotImplementedError(f"Strategy of type /freeze_realign_unfreeze_[0-9]+_[0-9]+/ is not implemented for model {model_name}")
                     for param in embeddings.parameters():
@@ -405,6 +458,8 @@ def realignment_training_loop(
                         layers = model.roberta.encoder.layer
                     elif "distilbert" in model_name:
                         layers = model.distilbert.transformer.layer
+                    elif model_name.startswith("bert"):
+                        layers = model.bert.encoder.layer
                     else:
                         raise NotImplementedError(f"Strategy of type /freeze_realign_unfreeze_[0-9]+_[0-9]+/ is not implemented for model {model_name}")
                     for param in layers[i].parameters():
@@ -495,6 +550,31 @@ def realignment_training_loop(
                         param.requires_grad = True
 
                 print('Unfreezing done...')
+            
+            if strategy == "freeze_realign_unfreeze" and model_name.startswith("bert"):
+                num_layers = len(model.bert.encoder.layer)
+                layers_to_freeze = num_layers // 2  # Freezing the first half of the layers
+
+                print(f'Unfreezing first {layers_to_freeze} encoder blocks...')
+                for i in range(layers_to_freeze):
+                    for param in model.bert.encoder.layer[i].parameters():
+                        param.requires_grad = True
+
+                print('Unfreezing done...')
+
+            if strategy == "freeze_realign_unfreeze_last_half" and model_name.startswith("bert"):
+                num_layers = len(model.bert.encoder.layer)
+                layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+                # Calculate the starting index for freezing (freezing the last half of the layers)
+                start_freezing_from_layer = num_layers - layers_to_freeze
+
+                print(f'Unfreezing last {layers_to_freeze} encoder blocks...')
+                for i in range(start_freezing_from_layer, num_layers):
+                    for param in model.bert.encoder.layer[i].parameters():
+                        param.requires_grad = True
+
+                print('Unfreezing done...')
 
             if strategy == "freeze_realign_unfreeze_last_half" and "roberta" in model_name:
                 num_layers = len(model.roberta.encoder.layer)
@@ -519,6 +599,8 @@ def realignment_training_loop(
                         embeddings = model.roberta.embeddings
                     elif "distilbert" in model_name:
                         embeddings = model.distilbert.embeddings
+                    elif model_name.startswith("bert"):
+                        embeddings = model.bert.embeddings
                     else:
                         raise NotImplementedError(f"Strategy of type /freeze_realign_unfreeze_[0-9]+_[0-9]+/ is not implemented for model {model_name}")
                     for param in embeddings.parameters():
@@ -529,6 +611,8 @@ def realignment_training_loop(
                         layers = model.roberta.encoder.layer
                     elif "distilbert" in model_name:
                         layers = model.distilbert.transformer.layer
+                    elif model_name.startswith("bert"):
+                        embeddings = model.bert.encoder.layer
                     else:
                         raise NotImplementedError(f"Strategy of type /freeze_realign_unfreeze_[0-9]+_[0-9]+/ is not implemented for model {model_name}")
                     for param in layers[i].parameters():
@@ -589,6 +673,31 @@ def realignment_training_loop(
                 param.requires_grad = False
 
         print('Freezing done...')
+
+    if strategy == "during_freeze_realign_unfreeze" and model_name.startswith("bert"):
+        num_layers = len(model.bert.encoder.layer)
+        layers_to_freeze = num_layers // 2  # Freezing the first half of the layers
+
+        print(f'Freezing first {layers_to_freeze} encoder blocks...')
+        for i in range(layers_to_freeze):
+            for param in model.bert.encoder.layer[i].parameters():
+                param.requires_grad = False
+
+        print('Freezing done...')
+
+    if strategy == "during_freeze_realign_unfreeze_last_half" and model_name.startswith("bert"):
+        num_layers = len(model.bert.encoder.layer)
+        layers_to_freeze = num_layers // 2  # Number of layers to freeze
+
+        # Calculate the starting index for freezing (freezing the last half of the layers)
+        start_freezing_from_layer = num_layers - layers_to_freeze
+
+        print(f'Freezing last {layers_to_freeze} encoder blocks...')
+        for i in range(start_freezing_from_layer, num_layers):
+            for param in model.bert.encoder.layer[i].parameters():
+                param.requires_grad = False
+
+        print('Freezing done...')
     
     if strategy == "during_freeze_realign_unfreeze_last_half" and "roberta" in model_name:
         num_layers = len(model.roberta.encoder.layer)
@@ -619,6 +728,10 @@ def realignment_training_loop(
             n_layers = len(model.distilbert.transformer.layer)
             encoder_prefix = "distilbert.transformer.layer"
             embedding_prefix = "distilbert.embeddings"
+        elif model_name.startswith("bert"):
+            n_layers = len(model.bert.transformer.layer)
+            encoder_prefix = "bert.encoder.layer"
+            embedding_prefix = "bert.embeddings"
         else:
             raise NotImplementedError(f"during_partial_freeze_* strategies are not implemented for model {model}")
         
