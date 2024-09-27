@@ -160,7 +160,7 @@ def realignment_training_loop(
                 else:
                     logging.info(f"TransformerBlock {i}: Frozen")
 
-        elif model_name.startswith("bert-base"):
+        elif model_name.startswith("bert"):
             if any(param.requires_grad for param in model.bert.embeddings.parameters()):
                 logging.info("Embedding Space: Unfrozen")
             else:
@@ -398,7 +398,7 @@ def realignment_training_loop(
 
                 print('Freezing done...')
             
-            if strategy == "freeze_realign_unfreeze" and model.startswith("bert"):
+            if strategy == "freeze_realign_unfreeze" and model_name.startswith("bert"):
                 num_layers = len(model.bert.encoder.layer)
                 layers_to_freeze = num_layers // 2  # Freezing the first half of the layers
 
@@ -409,7 +409,7 @@ def realignment_training_loop(
 
                 print('Freezing done...')
 
-            if strategy == "freeze_realign_unfreeze_last_half" and model.startswith("bert"):
+            if strategy == "freeze_realign_unfreeze_last_half" and model_name.startswith("bert"):
                 num_layers = len(model.bert.encoder.layer)
                 layers_to_freeze = num_layers // 2  # Number of layers to freeze
 
