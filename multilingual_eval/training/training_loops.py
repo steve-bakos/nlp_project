@@ -729,7 +729,7 @@ def realignment_training_loop(
             encoder_prefix = "distilbert.transformer.layer"
             embedding_prefix = "distilbert.embeddings"
         elif model_name.startswith("bert"):
-            n_layers = len(model.bert.transformer.layer)
+            n_layers = len(model.bert.encoder.layer)
             encoder_prefix = "bert.encoder.layer"
             embedding_prefix = "bert.embeddings"
         else:
